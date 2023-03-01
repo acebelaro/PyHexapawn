@@ -15,7 +15,6 @@
 from PyQt5 import QtWidgets, QtCore
 
 from hexapawn.game_manager import *
-from hexapawn.pawn import *
 from hexapawn.board import *
 from hexapawn.draw_util import DrawUtil
 

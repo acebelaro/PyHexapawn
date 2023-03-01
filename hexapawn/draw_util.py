@@ -16,7 +16,6 @@ from PyQt5.QtGui import QPainter, QPixmap
 from PyQt5.QtCore import Qt, QSize
 
 from hexapawn.game_manager import *
-from hexapawn.pawn import *
 from hexapawn.board import *
 
 from hexapawn_ui import Ui_widgetHexapawn
