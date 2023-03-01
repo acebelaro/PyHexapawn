@@ -127,7 +127,7 @@ class DrawUtil():
         button.setIconSize(size)
 
     @staticmethod
-    def drawWinnerInfo(ui:Ui_widgetHexapawn)->None:
+    def drawWinnerInfo(ui:Ui_widgetHexapawn,gameManager:GameManager)->None:
         """
         Draws winner information.
         
@@ -135,5 +135,12 @@ class DrawUtil():
         ---------
         ui : Ui_widgetHexapawn
             Hexapawn UI object.
+        gameManager : GameManager
+            Game manager for game information.
         """
-        ui.lblPlayerToMove.setText("WINNER")
+        winner = gameManager.winner
+        if not winner == None:
+            ui.lblPlayerToMove.setText("WINNER")
+        else:
+            ui.lblPlayerToMove.setText("Player To Move")
+        

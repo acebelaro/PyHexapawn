@@ -109,7 +109,7 @@ class HexapawnApp():
                 elif res == MovePawnResult.BLACK_WIN:
                     print("BLACK WINS!")
                 self._gameManager.endGame()
-                DrawUtil.drawWinnerInfo(self._ui)
+                DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
 
     def _handleSelectedPawnMovement(
             self,
@@ -209,6 +209,7 @@ class HexapawnApp():
 
         DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
+        DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
 
     ######################################################################
     #                          public functions                          #
