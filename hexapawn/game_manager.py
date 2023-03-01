@@ -28,6 +28,9 @@ class GameManager():
     ended = False
     """Game end flag."""
 
+    winner = None
+    """Winning player"""
+
     def __init__(self) -> None:
         self.reset()
 
@@ -48,6 +51,7 @@ class GameManager():
         Ends game.
         """
         self.ended = True
+        self.winner = self.turnPlayer
 
     def reset(self)->None:
         """
@@ -55,3 +59,4 @@ class GameManager():
         """
         self.turnPlayer = Player.WHITE
         self.ended = False
+        self.winner = None
