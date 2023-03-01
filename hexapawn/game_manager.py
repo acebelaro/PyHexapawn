@@ -18,11 +18,14 @@ class Player(IntEnum):
     WHITE = auto()
     BLACK = auto()
 
+FIRST_PLAYER_TO_MOVE = Player.WHITE
+"""First player to move."""
+
 class GameManager():
     """
     Game manager.
     """
-    turnPlayer = Player.WHITE
+    turnPlayer = FIRST_PLAYER_TO_MOVE
     """Player making move."""
 
     ended = False
@@ -57,6 +60,6 @@ class GameManager():
         """
         Resets game.
         """
-        self.turnPlayer = Player.WHITE
+        self.turnPlayer = FIRST_PLAYER_TO_MOVE
         self.ended = False
         self.winner = None
