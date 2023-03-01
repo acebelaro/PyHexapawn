@@ -1,0 +1,1 @@
+pyuic5 hexapawn_ui.ui -o hexapawn_ui.py -x
