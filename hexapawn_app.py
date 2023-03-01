@@ -96,15 +96,12 @@ class HexapawnApp():
             newPosition: Position
                 New position of moved pawn
             """
-            print("pawn movemment: [{}] {},{} -> {},{}".
-                  format(pawn.color.name,
-                         pawn.position.row,
-                         pawn.position.col,
-                         newPosition.row,
-                         newPosition.col))
             res = self._board.movePawn(pawn,newPosition)
             if res == MovePawnResult.NO_WINNER:
                 self._nextPlayer()
+            elif res == MovePawnResult.INVALID:
+                # do nothing
+                print("Invalid move.")
             else:
                 # has winnner
                 if res == MovePawnResult.WHITE_WIN:

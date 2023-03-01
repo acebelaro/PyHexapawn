@@ -22,6 +22,7 @@ class MovePawnResult(IntEnum):
     NO_WINNER   = auto()
     WHITE_WIN   = auto()
     BLACK_WIN   = auto()
+    INVALID     = auto()
 
 class Board():
     """
@@ -54,6 +55,56 @@ class Board():
             if pawn.inPosition(position):
                 res = pawn
                 break
+        return res
+    
+    def _isMoveValid(self,pawn:Pawn,newPosition:Position,pawnInNewPosition:Pawn)->bool:
+        """
+        Checks if move is valid.\n
+        Valid if:\n
+            1) Moving forward to empty tile; and\n
+            2) Moving diagonally to take rival tile.
+        
+        Parameter
+        ---------
+        pawn : Pawn
+            Pawn being moved.
+        newPosition : Position
+            New position of pawn being moved.
+        pawnInNewPosition : Pawn
+            Pawn in the tile being moved to.
+
+        Returns
+        ---------
+        - True  : move is valid
+        - False : move is invalid
+        """
+        res = False
+        if pawn.color == Color.WHITE:
+            if newPosition.row == (pawn.position.row-1):
+                if newPosition.col == pawn.position.col:
+                    # just moving forward
+                    if pawnInNewPosition == None:
+                        res = True
+                elif newPosition.col == (pawn.position.col-1) or\
+                    newPosition.col == (pawn.position.col+1):
+                    # moving diagonal
+                    if not pawnInNewPosition == None and\
+                        pawnInNewPosition.color == Color.BLACK:
+                        # taking rival pawn
+                        res = True
+        else:
+            if newPosition.row == (pawn.position.row+1):
+                if newPosition.col == pawn.position.col:
+                    # just moving forward
+                    if pawnInNewPosition == None:
+                        res = True
+                elif newPosition.col == (pawn.position.col-1) or\
+                    newPosition.col == (pawn.position.col+1):
+                    # moving diagonal
+                    if not pawnInNewPosition == None and\
+                        pawnInNewPosition.color == Color.WHITE:
+                        # taking rival pawn
+                        res = True
         return res
     
     def _checkForWinner(self,movedPawn:Pawn)->MovePawnResult:
@@ -135,25 +186,29 @@ class Board():
         - MovePawnResultPawn.NO_WINNER : \n
                 No winner from last pawn movement.
         """
-        pawnInPosition = self._getPawnInPosition(newPosition)
-        if not pawnInPosition == None:
-            # taking rival pawn
-            if pawn.color == Color.WHITE:
-                assert pawnInPosition.color == Color.BLACK, "Invalid move."
-                # delete pawn
-                self._blackPawns = [x for x in self._blackPawns\
-                                    if not x.inPosition(newPosition)]
-            else:
-                assert pawnInPosition.color == Color.WHITE, "Invalid move."
-                # delete pawn
-                self._whitePawns = [x for x in self._whitePawns\
-                                    if not x.inPosition(newPosition)]
-        
-        pawn.position.row = newPosition.row
-        pawn.position.col = newPosition.col
+        res = MovePawnResult.INVALID
+        pawnInNewPosition = self._getPawnInPosition(newPosition)
+        if self._isMoveValid(pawn,newPosition,pawnInNewPosition):
+            # return MovePawnResult.INVALID
+            if not pawnInNewPosition == None:
+                # taking rival pawn
+                if pawn.color == Color.WHITE:
+                    assert pawnInNewPosition.color == Color.BLACK, "Invalid move."
+                    # delete pawn
+                    self._blackPawns = [x for x in self._blackPawns\
+                                        if not x.inPosition(newPosition)]
+                else:
+                    assert pawnInNewPosition.color == Color.WHITE, "Invalid move."
+                    # delete pawn
+                    self._whitePawns = [x for x in self._whitePawns\
+                                        if not x.inPosition(newPosition)]
+            
+            pawn.position.row = newPosition.row
+            pawn.position.col = newPosition.col
 
-        # check for winning
-        return self._checkForWinner(pawn)
+            # check for winning
+            res = self._checkForWinner(pawn)
+        return res
     
     def resetPawns(self)->None:
         """
