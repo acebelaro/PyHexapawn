@@ -153,6 +153,7 @@ class Board():
                     # taking rival pawn
                     res = True
         return res
+    
     def _blackPawnHasPossibleMove(self)->bool:
         """
         Checks if there are possible move for black pawns.
@@ -288,7 +289,7 @@ class Board():
 
         Returns
         ---------
-        - list : 2D list of pawns. None value indicates empty tile.
+        list : 2D list of pawns. None value indicates empty tile.
         """
         allPawns = self._whitePawns + self._blackPawns
         positions = []
@@ -346,6 +347,39 @@ class Board():
             res = self._checkForWinner(pawn)
         return res
     
+    @staticmethod
+    def arePawnsEqual(aPawns:list,bPawns:list)->bool:
+        """
+        Retruens a 2D list representing pawn positions.
+
+        Parameter
+        ---------
+        aPawns : list
+            Pawn list A.
+        bPawns : list
+            Pawn list B.
+
+        Returns
+        ---------
+        True - list of pawns are equal.
+        False - list of pawns are not equal.
+        """
+        res = False
+        assert type(aPawns) == list and all(type(a)==Pawn for a in aPawns)
+        assert type(bPawns) == list and all(type(b)==Pawn for b in bPawns)
+        if len(aPawns) == len(bPawns):
+            res = True
+            for aPawn in aPawns:
+                bPawn = next((p for p in bPawns \
+                             if p.color == aPawn.color and\
+                                p.position.row == aPawn.position.row and \
+                                p.position.col == aPawn.position.col), 
+                             None)
+                if bPawn == None:
+                    res = False
+                    break
+        return res
+
     def resetPawns(self)->None:
         """
         Resets pawns.

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>372</width>
+    <width>610</width>
     <height>421</height>
    </rect>
   </property>
@@ -17,13 +17,13 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>20</y>
+     <y>10</y>
      <width>341</width>
      <height>341</height>
     </rect>
    </property>
    <property name="title">
-    <string/>
+    <string>Board</string>
    </property>
    <widget class="QPushButton" name="btnPawn0">
     <property name="geometry">
@@ -147,9 +147,9 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>370</y>
+     <y>360</y>
      <width>341</width>
-     <height>41</height>
+     <height>51</height>
     </rect>
    </property>
    <property name="title">
@@ -195,6 +195,58 @@
     </property>
     <property name="text">
      <string>Reset</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="grpComputer">
+   <property name="geometry">
+    <rect>
+     <x>370</x>
+     <y>10</y>
+     <width>231</width>
+     <height>401</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Computer</string>
+   </property>
+   <widget class="QPushButton" name="btnComputerMove">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>211</width>
+      <height>191</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="grpMoves">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>220</y>
+      <width>211</width>
+      <height>141</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnMoveRandomSelect">
+    <property name="geometry">
+     <rect>
+      <x>14</x>
+      <y>370</y>
+      <width>211</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>  RANDOM SELECT</string>
     </property>
    </widget>
   </widget>

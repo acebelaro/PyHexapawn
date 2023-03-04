@@ -9,14 +9,18 @@
 
 ###############################################################################
 """
+import os
 from enum import Enum
+from types import MethodType
 
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtGui import QPainter, QPixmap
 from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtWidgets import QVBoxLayout
 
 from hexapawn.game_manager import *
 from hexapawn.board import *
+from hexapawn.computer import *
 
 from hexapawn_ui import Ui_widgetHexapawn
 
@@ -30,6 +34,38 @@ class TileFillColor(Enum):
 BUTTON_ICON_SIZE = 96
 PAWN_DRAWING_SIZE = BUTTON_ICON_SIZE - 10
 PAWN_ELLIPSE_XY = (BUTTON_ICON_SIZE - PAWN_DRAWING_SIZE)/2
+
+COMPUTER_MOVE_IMG_PATH = "./doc/computer_moves/{}.png"
+COMPUTER_MOVE_STYLE = "border-image : url({});"
+COMPUTER_MOVE_CLEAR_STYLE = "background-color: rgb(255, 255, 255);"
+
+class MoveButton(QtWidgets.QPushButton):
+    """
+    Move button.
+    """
+
+    def __init__(self,move:Move,moveSelectFunc:MethodType) -> None:
+        """
+        Parameter
+        ---------
+        move : Move
+            Move for this button.
+        moveSelectFunc : MethodType
+            Callback when move is selected.
+        """
+        assert not move == None and type(move) == Move
+        assert not moveSelectFunc == None and type(moveSelectFunc) == MethodType
+        super().__init__()
+        self.move = move
+        self.moveSelectFunc = moveSelectFunc
+        self.clicked.connect(self._clicked)
+        self.setStyleSheet("background-color : {}".format(move.color.value))
+
+    def _clicked(self)->None:
+        """
+        Callback when move button is clicked.
+        """
+        self.moveSelectFunc(self.move)
 
 class DrawUtil():
     """
@@ -69,6 +105,25 @@ class DrawUtil():
             painter.end()
         button.setIcon(QtGui.QIcon(pixmap))
         button.setIconSize(size)
+
+    @staticmethod
+    def _clearLayout(layout):
+        """
+        Clears layout.
+        
+        Parameter
+        ---------
+        layout : Any
+            Layout to clear.
+        """
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
+                else:
+                    DrawUtil._clearLayout(item.layout())
 
     ######################################################################
     #                          public functions                          #
@@ -143,3 +198,59 @@ class DrawUtil():
         else:
             ui.lblPlayerToMove.setText("Player To Move")
         
+    @staticmethod
+    def drawComputerTurnBox(ui:Ui_widgetHexapawn,box:Box,moveSelectFunc:MethodType)->None:
+        """
+        Clears computer turn box UIs.
+        
+        Parameter
+        ---------
+        ui : Ui_widgetHexapawn
+            Hexapawn UI object.
+        box : Box
+            Box to draw.
+        moveSelectFunc : MethodType
+            Callback when move is selected.
+        """
+        # assert not box == None
+        # TODO: add assert for box must be not None
+        assert type(ui) == Ui_widgetHexapawn
+        assert not moveSelectFunc == None and type(moveSelectFunc) == MethodType
+        clear = True
+        if not box == None:
+            imgPath = COMPUTER_MOVE_IMG_PATH.format(box.id)
+            if os.path.exists(imgPath):
+                ui.btnComputerMove.setStyleSheet(COMPUTER_MOVE_STYLE.format(imgPath))
+                layout = ui.grpMoves.layout()
+                if layout == None:
+                    layout = QVBoxLayout()
+                    ui.grpMoves.setLayout(layout)
+                else:
+                    DrawUtil._clearLayout(ui.grpMoves.layout())
+                for move in box.moves:
+                    btn = MoveButton(move,moveSelectFunc)
+                    layout.addWidget(btn)
+                layout.addStretch()
+                ui.btnMoveRandomSelect.setEnabled(True)
+                clear = False
+            else:
+                print("{} not found!".format(imgPath))
+        else:
+            print("Box not found!")            
+        if clear:
+            DrawUtil.clearComputerTurnBox(ui)
+
+    @staticmethod
+    def clearComputerTurnBox(ui:Ui_widgetHexapawn)->None:
+        """
+        Clears computer turn box UIs.
+        
+        Parameter
+        ---------
+        ui : Ui_widgetHexapawn
+            Hexapawn UI object.
+        """
+        assert type(ui) == Ui_widgetHexapawn
+        ui.btnComputerMove.setStyleSheet(COMPUTER_MOVE_CLEAR_STYLE)
+        DrawUtil._clearLayout(ui.grpMoves.layout())
+        ui.btnMoveRandomSelect.setEnabled(False)
