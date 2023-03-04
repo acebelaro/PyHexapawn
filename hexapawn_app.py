@@ -44,16 +44,20 @@ class HexapawnApp():
         self._buttonMap = []
         self._computer = Computer()
         self._currentBox = None
+        self._lastMove = None
 
         self._selectedPawnPosition = None
 
         self._setupTiles()
         self._ui.btnReset.clicked.connect(self._reset)
         self._ui.btnMoveRandomSelect.clicked.connect(self._moveRandomSelect)
+        self._ui.btnResetIntelligence.clicked.connect(self._resetIntelligence)
     
         DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
         DrawUtil.drawBox(self._ui,self._currentBox,self._selectMove)
+
+        self._setComputerMoveUi()
 
     def _setupTiles(self)->None:
         """
@@ -83,6 +87,13 @@ class HexapawnApp():
             lambda event:self._boardTileClicked(event,Position(2,1)))
         self._ui.btnPawn8.clicked.connect(
             lambda event:self._boardTileClicked(event,Position(2,2)))
+        
+    def _setComputerMoveUi(self)->None:
+        """
+        """
+        enabled = True if self._gameManager.turnPlayer == Player.BLACK else False
+        self._ui.grpMoves.setEnabled(enabled)
+        self._ui.btnMoveRandomSelect.setEnabled(enabled)
 
     def _selectMove(self,move:Move)->None:
         """
@@ -94,6 +105,7 @@ class HexapawnApp():
             Move selected. Cannot be None.
         """
         assert not move == None and type(move) == Move
+        self._lastMove = move
         tilePositions = self._board.getTilePositions()
         blackPawnToMove = tilePositions[move.position.row][move.position.col]
         newPosition = move.newPosition()
@@ -108,9 +120,20 @@ class HexapawnApp():
         """
         assert self._gameManager.turnPlayer == Player.BLACK
         assert not self._currentBox == None
-        rand = random.choice(range(len(self._currentBox.moves)))
-        move = self._currentBox.moves[rand]
-        self._selectMove(move)
+        remainingMoves = list(filter(lambda m : not m.removed,self._currentBox.moves))
+        move = None
+        if len(remainingMoves) > 0:
+            while True:
+                rand = random.choice(range(len(remainingMoves)))
+                move = remainingMoves[rand]
+                if not move.removed:
+                    break
+        else:
+            # no other choice
+            rand = random.choice(range(len(self._currentBox.moves)))
+            move = self._currentBox.moves[rand]
+        if not move == None:            
+            self._selectMove(move)
 
     def _nextPlayer(self)->None:
         """
@@ -119,19 +142,32 @@ class HexapawnApp():
         self._selectedPawnPosition = None
         self._gameManager.nextPlayer()
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
+        self._setComputerMoveUi()
         if self._gameManager.turnPlayer == Player.BLACK:
             self._currentBox = self._computer.getBoxForCurrentBlackTurn(self._gameManager.turn,self._board)
-        else:
-            self._currentBox = None
         DrawUtil.drawBox(self._ui,self._currentBox,self._selectMove)
 
-    def _declareWinner(self)->None:
+    def _declareWinner(self,winner:Player)->None:
         """
         Declare winner.
         """
         self._gameManager.endGame()
-        self._ui.grpComputer.setEnabled(False)
         DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
+
+        # update result
+        index = self._ui.tableResults.rowCount()
+        self._ui.tableResults.setRowCount(index + 1)
+
+        winDetails = winner.name
+        if winner == Player.WHITE and not self._lastMove == None:
+            previousTurn = self._gameManager.turn-1
+            winDetails = "{} : Removed {} for turn {}."\
+                .format(winDetails,self._lastMove.color.name,previousTurn)
+            self._lastMove.remove()
+
+        item = QtWidgets.QTableWidgetItem()
+        item.setText(winDetails)
+        self._ui.tableResults.setItem(index, 0, item)        
 
     def _movePawn(self,pawn:Pawn,newPosition:Position)->None:
         """
@@ -150,14 +186,15 @@ class HexapawnApp():
             self._nextPlayer()
         elif res == MovePawnResult.INVALID:
             # do nothing
-            print("Invalid move.")
+            pass
         else:
             # has winnner
+            winner = None
             if res == MovePawnResult.WHITE_WIN:
-                print("WHITE WINS!")
+                winner = Player.WHITE
             elif res == MovePawnResult.BLACK_WIN:
-                print("BLACK WINS!")
-            self._declareWinner()
+                winner = Player.BLACK
+            self._declareWinner(winner)
 
     def _handleSelectedPawnMovement(
             self,
@@ -213,7 +250,7 @@ class HexapawnApp():
             Indicator parameter of which tile was clicked. See initialization
             of board tiles in __init__.
         """
-        if self._gameManager.ended:
+        if self._gameManager.ended or self._gameManager.turnPlayer == Player.BLACK:
             return
         tilePositions = self._board.getTilePositions()
         pawnInClickedTile = tilePositions[clickedTilePosition.row][clickedTilePosition.col]
@@ -255,12 +292,20 @@ class HexapawnApp():
         self._gameManager.reset()
         self._selectedPawnPosition = None
         self._currentBox = None
-        self._ui.grpComputer.setEnabled(True)
+        self._lastMove = None
 
         DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
         DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
         DrawUtil.drawBox(self._ui,self._currentBox,self._selectMove)
+
+    def _resetIntelligence(self):
+        """
+        Resets intelligence.
+        """
+        self._ui.tableResults.setRowCount(0)
+        self._computer.resetIntelligence()
+        self._reset()
 
     ######################################################################
     #                          public functions                          #

@@ -16,7 +16,7 @@ from types import MethodType
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtGui import QPainter, QPixmap, QPen, QPolygon
 from PyQt5.QtCore import Qt, QSize, QPoint
-from PyQt5.QtWidgets import QVBoxLayout
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout
 
 from hexapawn.game_manager import *
 from hexapawn.board import *
@@ -43,7 +43,7 @@ BOX_BOARD_PAWN_SIZE = 40
 BOX_BOARD_PAWNW_START_POINT_DIFF = (BOX_BOARD_TILE_SIZE-BOX_BOARD_PAWN_SIZE)/2
 BOX_BOARD_COLOR = QtGui.QColor(255,193,116)
 
-SELECT_MOVE_BUTTON_SIZE = QSize(180,15)
+SELECT_MOVE_BUTTON_SIZE = QSize(160,15)
 
 MOVEMENT_POINTS_MAP = {
     Movement.FORWARD : [
@@ -76,9 +76,9 @@ MOVEMENT_POINTS_MAP = {
 }
 """Polygon point list for each movement for drawing."""
 
-class SelectMoveButton(QtWidgets.QPushButton):
+class SelectMoveButtonWidget(QtWidgets.QWidget):
     """
-    Move button.
+    Move widget. Conists of button to select the move and label indicator if it is removed from box.
     """
 
     def __init__(self,move:Move,moveSelectFunc:MethodType) -> None:
@@ -95,13 +95,19 @@ class SelectMoveButton(QtWidgets.QPushButton):
         super().__init__()
         self.move = move
         self.moveSelectFunc = moveSelectFunc
-        self.clicked.connect(self._clicked)
-
-        size = SELECT_MOVE_BUTTON_SIZE
-        pixmap = QPixmap(size)
+        button = QtWidgets.QPushButton()
+        button.clicked.connect(self._clicked)
+        button.setEnabled(not move.removed)
+        pixmap = QPixmap(SELECT_MOVE_BUTTON_SIZE)
         pixmap.fill(move.color.value)
-        self.setIcon(QtGui.QIcon(pixmap))
-        self.setIconSize(size)
+        button.setIcon(QtGui.QIcon(pixmap))
+        button.setIconSize(SELECT_MOVE_BUTTON_SIZE)
+
+        btnLayout = QHBoxLayout(self)
+        flagText = "X" if move.removed else " "
+        btnLayout.addWidget(QtWidgets.QLabel(flagText))
+        btnLayout.addWidget(button)
+        btnLayout.addStretch()
 
     def _clicked(self)->None:
         """
@@ -234,25 +240,25 @@ class DrawUtil():
         else:
             DrawUtil._clearLayout(ui.grpMoves.layout())
         if not box == None:
-            ui.btnMoveRandomSelect.setEnabled(True)
             for move in box.moves:
-                # select move button
-                btn = SelectMoveButton(move,moveSelectFunc)
-                layout.addWidget(btn)
+                # select move button widget
+                wdgt = SelectMoveButtonWidget(move,moveSelectFunc)
+                layout.addWidget(wdgt)
                 # movement arrow
                 pts = MOVEMENT_POINTS_MAP[move.movement]
                 if not pts == None:
                     painter.setPen(QPen(Qt.black, 1, Qt.SolidLine))
-                    painter.setBrush(move.color.value)
+                    if not move.removed:
+                        painter.setBrush(move.color.value)
+                    else:
+                        painter.setBrush(QtGui.QColor(195,195,195))
                     adjustP = []
                     adjX = (move.position.col*BOX_BOARD_TILE_SIZE)
                     adjY = (move.position.row*BOX_BOARD_TILE_SIZE)
                     for pt in pts:
                         adjustP.append(QPoint(pt.x()+adjX,pt.y()+adjY))
                     painter.drawPolygon(QPolygon(adjustP))
-            layout.addStretch()
-        else:
-            ui.btnMoveRandomSelect.setEnabled(False)
+            layout.setAlignment(Qt.AlignTop)
 
     ######################################################################
     #                          public functions                          #
