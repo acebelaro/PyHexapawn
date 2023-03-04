@@ -10,6 +10,7 @@
 ###############################################################################
 """
 from enum import Enum, IntEnum, auto
+import math
 from PyQt5.QtCore import Qt
 
 SIZE = 3
@@ -350,7 +351,7 @@ class Board():
     @staticmethod
     def arePawnsEqual(aPawns:list,bPawns:list)->bool:
         """
-        Retruens a 2D list representing pawn positions.
+        Checks if two pawn lists are equal.
 
         Parameter
         ---------
@@ -380,6 +381,34 @@ class Board():
                     break
         return res
 
+    def arePawnPositionsSymmetric(self)->bool:
+        """
+        Check if pawn positions in board are symmetric.
+
+        Returns
+        ---------
+        True - Symmetric.
+        False - Not symmetric.
+        """
+        res = True
+        tilePositions = self.getTilePositions()
+        r = math.floor(SIZE/2)
+        for row in range(SIZE):
+            if not res:
+                break
+            for col in range(r):
+                pawnA = tilePositions[row][col]
+                pawnB = tilePositions[row][(SIZE-1)-col]
+                if ( not pawnA == None and pawnB == None) or\
+                    ( pawnA == None and not pawnB == None):
+                    res = False
+                elif not pawnA == None and not pawnB == None:
+                    if not (pawnA.color == pawnB.color):
+                        res = False
+                if not res:
+                    break
+        return res
+
     def resetPawns(self)->None:
         """
         Resets pawns.
@@ -394,3 +423,4 @@ class Board():
             Pawn(Color.BLACK,Position(0,1)),
             Pawn(Color.BLACK,Position(0,2))
         ]
+
