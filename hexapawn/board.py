@@ -397,8 +397,9 @@ class Board():
             if not res:
                 break
             for col in range(r):
+                reversedCol = (SIZE-1)-col
                 pawnA = tilePositions[row][col]
-                pawnB = tilePositions[row][(SIZE-1)-col]
+                pawnB = tilePositions[row][reversedCol]
                 if ( not pawnA == None and pawnB == None) or\
                     ( pawnA == None and not pawnB == None):
                     res = False
