@@ -48,13 +48,12 @@ class HexapawnApp():
         self._selectedPawnPosition = None
 
         self._setupTiles()
-        self._ui.btnComputerMove.setEnabled(False)
         self._ui.btnReset.clicked.connect(self._reset)
         self._ui.btnMoveRandomSelect.clicked.connect(self._moveRandomSelect)
     
         DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
-        DrawUtil.clearComputerTurnBox(self._ui)
+        DrawUtil.drawBox(self._ui,self._currentBox,self._selectMove)
 
     def _setupTiles(self)->None:
         """
@@ -111,7 +110,6 @@ class HexapawnApp():
         assert not self._currentBox == None
         rand = random.choice(range(len(self._currentBox.moves)))
         move = self._currentBox.moves[rand]
-        print("Random select = {}".format(move.color.value))
         self._selectMove(move)
 
     def _nextPlayer(self)->None:
@@ -123,10 +121,9 @@ class HexapawnApp():
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
         if self._gameManager.turnPlayer == Player.BLACK:
             self._currentBox = self._computer.getBoxForCurrentBlackTurn(self._gameManager.turn,self._board)
-            DrawUtil.drawComputerTurnBox(self._ui,self._currentBox,self._selectMove)
         else:
             self._currentBox = None
-            DrawUtil.clearComputerTurnBox(self._ui)
+        DrawUtil.drawBox(self._ui,self._currentBox,self._selectMove)
 
     def _declareWinner(self)->None:
         """
@@ -257,12 +254,13 @@ class HexapawnApp():
         self._board.resetPawns()
         self._gameManager.reset()
         self._selectedPawnPosition = None
+        self._currentBox = None
         self._ui.grpComputer.setEnabled(True)
 
         DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
         DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
-        DrawUtil.clearComputerTurnBox(self._ui)
+        DrawUtil.drawBox(self._ui,self._currentBox,self._selectMove)
 
     ######################################################################
     #                          public functions                          #

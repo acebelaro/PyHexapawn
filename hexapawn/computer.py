@@ -1,16 +1,16 @@
-
 from enum import Enum, IntEnum, auto
 import re
+from PyQt5 import QtGui
 from hexapawn.board import *
 
 class MoveColor(Enum):
     """
     Move colors. Use for setting the style of button for move.
     """
-    GREEN   = "green"
-    RED     = "red"
-    BLUE    = "blue"
-    YELLOW  = "yellow"
+    GREEN   =  QtGui.QColor(0, 128, 0)
+    RED     =  QtGui.QColor(255, 0, 0)
+    BLUE    =  QtGui.QColor(0, 0, 255)
+    YELLOW  =  QtGui.QColor(255, 255, 0)
 
 class Movement(IntEnum):
     """
