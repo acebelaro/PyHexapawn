@@ -12,6 +12,7 @@
 import unittest
 import re
 from hexapawn.board import *
+from hexapawn.computer import *
 
 BOARD_ROW_SETTING_REGEX = "^(B|W|-) (B|W|-) (B|W|-)$"
 
@@ -33,19 +34,7 @@ class TestBoardUtil():
 
     @staticmethod
     def setBoard(board:Board,setting:list):
-        targetPositions = TestBoardUtil.getTargetPositions(setting)
-        whitePawns = []
-        blackPawns = []
-        for row in range(SIZE):
-            for col in range(SIZE):
-                char = targetPositions[row][col]
-                if char == "W":
-                    whitePawns.append(Pawn(Color.WHITE,Position(row,col)))
-                elif char == "B":
-                    blackPawns.append(Pawn(Color.BLACK,Position(row,col)))
-
-        board._whitePawns = whitePawns
-        board._blackPawns = blackPawns
+        Box._setPawnsFromStringSetup(board,setting)
 
 class TestPosition(unittest.TestCase):
 
@@ -206,6 +195,71 @@ class TestBoard(unittest.TestCase):
         # assert
         self.assertTrue(res)
 
+    def test_isMoveValid_blackPawnMovingForwardToEmptyTileMoreThanOneTileAwayIsInvalidMove(self):
+        board = Board()
+        # setup
+        TestBoardUtil.setBoard(
+            board,
+            [
+                "- B -",
+                "- - -",
+                "- - W",
+            ])
+        # execute
+        pawn = board._getPawnInPosition(Position(0,1))
+        assert not pawn == None and pawn.color == Color.BLACK
+        newPosition = Position(2,1)
+        pawnInPosition = board._getPawnInPosition(newPosition)
+        res = board._isMoveValid(pawn,newPosition,pawnInPosition)
+        # assert
+        self.assertFalse(res)
+
+    def test_isMoveValid_blackPawnMovingToSideInvalidMove(self):
+        board = Board()
+        # setup
+        TestBoardUtil.setBoard(
+            board,
+            [
+                "- B -",
+                "- - -",
+                "- - W",
+            ])
+        # execute
+        pawn = board._getPawnInPosition(Position(0,1))
+        assert not pawn == None and pawn.color == Color.BLACK
+        newPosition = Position(0,0)
+        pawnInPosition = board._getPawnInPosition(newPosition)
+        res = board._isMoveValid(pawn,newPosition,pawnInPosition)
+        # assert
+        self.assertFalse(res)
+        # execute
+        pawn = board._getPawnInPosition(Position(0,1))
+        assert not pawn == None and pawn.color == Color.BLACK
+        newPosition = Position(0,2)
+        pawnInPosition = board._getPawnInPosition(newPosition)
+        res = board._isMoveValid(pawn,newPosition,pawnInPosition)
+        # assert
+        self.assertFalse(res)
+
+    def test_isMoveValid_blackPawnMovingBackwardInvalidMove(self):
+        board = Board()
+        # setup
+        TestBoardUtil.setBoard(
+            board,
+            [
+                "- - -",
+                "- B -",
+                "- - W",
+            ])
+        # execute
+        pawn = board._getPawnInPosition(Position(1,1))
+        assert not pawn == None and pawn.color == Color.BLACK
+        newPosition = Position(0,1)
+        pawnInPosition = board._getPawnInPosition(newPosition)
+        res = board._isMoveValid(pawn,newPosition,pawnInPosition)
+        # assert
+        self.assertFalse(res)
+
     def test_isMoveValid_blackPawnMovingForwardToNonEmptyTileIsInvalidMove(self):
         board = Board()
         # setup
@@ -335,6 +389,71 @@ class TestBoard(unittest.TestCase):
         res = board._isMoveValid(pawn,newPosition,pawnInPosition)
         # assert
         self.assertTrue(res)
+
+    def test_isMoveValid_whitePawnMovingForwardToEmptyTileMoreThanOneTileAwayIsInvalidMove(self):
+        board = Board()
+        # setup
+        TestBoardUtil.setBoard(
+            board,
+            [
+                "- B -",
+                "- - -",
+                "- - W",
+            ])
+        # execute
+        pawn = board._getPawnInPosition(Position(2,2))
+        assert not pawn == None and pawn.color == Color.WHITE
+        newPosition = Position(0,2)
+        pawnInPosition = board._getPawnInPosition(newPosition)
+        res = board._isMoveValid(pawn,newPosition,pawnInPosition)
+        # assert
+        self.assertFalse(res)
+
+    def test_isMoveValid_whitePawnMovingToSideInvalidMove(self):
+        board = Board()
+        # setup
+        TestBoardUtil.setBoard(
+            board,
+            [
+                "B - -",
+                "- - -",
+                "- W -",
+            ])
+        # execute
+        pawn = board._getPawnInPosition(Position(2,1))
+        assert not pawn == None and pawn.color == Color.WHITE
+        newPosition = Position(2,0)
+        pawnInPosition = board._getPawnInPosition(newPosition)
+        res = board._isMoveValid(pawn,newPosition,pawnInPosition)
+        # assert
+        self.assertFalse(res)
+        # execute
+        pawn = board._getPawnInPosition(Position(2,1))
+        assert not pawn == None and pawn.color == Color.WHITE
+        newPosition = Position(2,2)
+        pawnInPosition = board._getPawnInPosition(newPosition)
+        res = board._isMoveValid(pawn,newPosition,pawnInPosition)
+        # assert
+        self.assertFalse(res)
+
+    def test_isMoveValid_whitePawnMovingBackwardInvalidMove(self):
+        board = Board()
+        # setup
+        TestBoardUtil.setBoard(
+            board,
+            [
+                "B - -",
+                "- W -",
+                "- - -",
+            ])
+        # execute
+        pawn = board._getPawnInPosition(Position(1,1))
+        assert not pawn == None and pawn.color == Color.WHITE
+        newPosition = Position(2,1)
+        pawnInPosition = board._getPawnInPosition(newPosition)
+        res = board._isMoveValid(pawn,newPosition,pawnInPosition)
+        # assert
+        self.assertFalse(res)
 
     def test_isMoveValid_whitePawnMovingForwardToNonEmptyTileIsInvalidMove(self):
         board = Board()
@@ -1605,6 +1724,84 @@ class TestBoard(unittest.TestCase):
                 "B - W",
                 "- - W",
             ])
+
+    ### Board.arePawnsEqual ###
+
+    def test_arePawnsEqual_mismatchPawnCountReturnsFalse(self):
+        # setup
+        aPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        bPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            # Pawn(Color.BLACK,Position(0,2)),
+        ]
+        # execute
+        res = Board.arePawnsEqual(aPawns,bPawns)
+        # assert
+        self.assertFalse(res)
+
+    def test_arePawnsEqual_mismatchPawnPositionReturnsFalse(self):
+        # setup
+        aPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        bPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(1,1)),
+        ]
+        # execute
+        res = Board.arePawnsEqual(aPawns,bPawns)
+        # assert
+        self.assertFalse(res)
+
+    def test_arePawnsEqual_mismatchPawnColorReturnsFalse(self):
+        # setup
+        aPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        bPawns = [
+            Pawn(Color.WHITE,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        # execute
+        res = Board.arePawnsEqual(aPawns,bPawns)
+        # assert
+        self.assertFalse(res)
+
+    def test_arePawnsEqual_returnsTrueForExactMatch(self):
+        # setup
+        aPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        bPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        # execute
+        res = Board.arePawnsEqual(aPawns,bPawns)
+        # assert
+        self.assertTrue(res)
+        
+        # setup
+        aPawns = []
+        bPawns = []
+        # execute
+        res = Board.arePawnsEqual(aPawns,bPawns)
+        # assert
+        self.assertTrue(res)
 
     ### Board.resetPawns ###
 

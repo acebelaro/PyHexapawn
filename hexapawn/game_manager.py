@@ -25,6 +25,10 @@ class GameManager():
     """
     Game manager.
     """
+
+    turn = 1
+    """Turn"""
+
     turnPlayer = FIRST_PLAYER_TO_MOVE
     """Player making move."""
 
@@ -48,6 +52,7 @@ class GameManager():
         self.turnPlayer = Player.BLACK if\
             self.turnPlayer == Player.WHITE\
             else Player.WHITE
+        self.turn+=1
         
     def endGame(self)->None:
         """
@@ -61,5 +66,6 @@ class GameManager():
         Resets game.
         """
         self.turnPlayer = FIRST_PLAYER_TO_MOVE
+        self.turn = 1
         self.ended = False
         self.winner = None

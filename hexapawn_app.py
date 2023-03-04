@@ -12,10 +12,15 @@
 
 ###############################################################################
 """
+import random
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QHBoxLayout
 
 from hexapawn.game_manager import *
 from hexapawn.board import *
+from hexapawn.computer import *
 from hexapawn.draw_util import DrawUtil
 
 from hexapawn_ui import Ui_widgetHexapawn
@@ -37,14 +42,19 @@ class HexapawnApp():
         self._gameManager = GameManager()
         self._board = Board()
         self._buttonMap = []
+        self._computer = Computer()
+        self._currentBox = None
 
         self._selectedPawnPosition = None
 
         self._setupTiles()
+        self._ui.btnComputerMove.setEnabled(False)
         self._ui.btnReset.clicked.connect(self._reset)
+        self._ui.btnMoveRandomSelect.clicked.connect(self._moveRandomSelect)
     
         DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
+        DrawUtil.clearComputerTurnBox(self._ui)
 
     def _setupTiles(self)->None:
         """
@@ -75,6 +85,35 @@ class HexapawnApp():
         self._ui.btnPawn8.clicked.connect(
             lambda event:self._boardTileClicked(event,Position(2,2)))
 
+    def _selectMove(self,move:Move)->None:
+        """
+        Selects a move for black.
+
+        Parameter
+        ---------
+        move : Move
+            Move selected. Cannot be None.
+        """
+        assert not move == None and type(move) == Move
+        tilePositions = self._board.getTilePositions()
+        blackPawnToMove = tilePositions[move.position.row][move.position.col]
+        newPosition = move.newPosition()
+        self._movePawn(blackPawnToMove,newPosition)
+        DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
+
+    def _moveRandomSelect(self)->None:
+        """
+        Selects a random move for black to execute.\n
+
+        Precondition: It is turn of black and there is current box.\n
+        """
+        assert self._gameManager.turnPlayer == Player.BLACK
+        assert not self._currentBox == None
+        rand = random.choice(range(len(self._currentBox.moves)))
+        move = self._currentBox.moves[rand]
+        print("Random select = {}".format(move.color.value))
+        self._selectMove(move)
+
     def _nextPlayer(self)->None:
         """
         Sets next player. Clears selection and update UIs.
@@ -82,33 +121,46 @@ class HexapawnApp():
         self._selectedPawnPosition = None
         self._gameManager.nextPlayer()
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
+        if self._gameManager.turnPlayer == Player.BLACK:
+            self._currentBox = self._computer.getBoxForCurrentBlackTurn(self._gameManager.turn,self._board)
+            DrawUtil.drawComputerTurnBox(self._ui,self._currentBox,self._selectMove)
+        else:
+            self._currentBox = None
+            DrawUtil.clearComputerTurnBox(self._ui)
+
+    def _declareWinner(self)->None:
+        """
+        Declare winner.
+        """
+        self._gameManager.endGame()
+        self._ui.grpComputer.setEnabled(False)
+        DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
 
     def _movePawn(self,pawn:Pawn,newPosition:Position)->None:
-            """
-            Moves pawn. Also handles setting of next player and
-            checking of winner. Ends the game if winner is declared.
+        """
+        Moves pawn. Also handles setting of next player and
+        checking of winner. Ends the game if winner is declared.
 
-            Parameter
-            ---------
-            pawn : Pawn
-                Pawn to be moved.
-            newPosition: Position
-                New position of moved pawn
-            """
-            res = self._board.movePawn(pawn,newPosition)
-            if res == MovePawnResult.NO_WINNER:
-                self._nextPlayer()
-            elif res == MovePawnResult.INVALID:
-                # do nothing
-                print("Invalid move.")
-            else:
-                # has winnner
-                if res == MovePawnResult.WHITE_WIN:
-                    print("WHITE WINS!")
-                elif res == MovePawnResult.BLACK_WIN:
-                    print("BLACK WINS!")
-                self._gameManager.endGame()
-                DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
+        Parameter
+        ---------
+        pawn : Pawn
+            Pawn to be moved.
+        newPosition: Position
+            New position of moved pawn
+        """
+        res = self._board.movePawn(pawn,newPosition)
+        if res == MovePawnResult.NO_WINNER:
+            self._nextPlayer()
+        elif res == MovePawnResult.INVALID:
+            # do nothing
+            print("Invalid move.")
+        else:
+            # has winnner
+            if res == MovePawnResult.WHITE_WIN:
+                print("WHITE WINS!")
+            elif res == MovePawnResult.BLACK_WIN:
+                print("BLACK WINS!")
+            self._declareWinner()
 
     def _handleSelectedPawnMovement(
             self,
@@ -205,10 +257,12 @@ class HexapawnApp():
         self._board.resetPawns()
         self._gameManager.reset()
         self._selectedPawnPosition = None
+        self._ui.grpComputer.setEnabled(True)
 
         DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
         DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
+        DrawUtil.clearComputerTurnBox(self._ui)
 
     ######################################################################
     #                          public functions                          #

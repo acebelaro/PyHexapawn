@@ -14,10 +14,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_widgetHexapawn(object):
     def setupUi(self, widgetHexapawn):
         widgetHexapawn.setObjectName("widgetHexapawn")
-        widgetHexapawn.resize(372, 421)
+        widgetHexapawn.resize(610, 421)
         self.grpBoard = QtWidgets.QGroupBox(widgetHexapawn)
-        self.grpBoard.setGeometry(QtCore.QRect(20, 20, 341, 341))
-        self.grpBoard.setTitle("")
+        self.grpBoard.setGeometry(QtCore.QRect(20, 10, 341, 341))
         self.grpBoard.setObjectName("grpBoard")
         self.btnPawn0 = QtWidgets.QPushButton(self.grpBoard)
         self.btnPawn0.setGeometry(QtCore.QRect(20, 20, 101, 101))
@@ -56,7 +55,7 @@ class Ui_widgetHexapawn(object):
         self.btnPawn8.setText("")
         self.btnPawn8.setObjectName("btnPawn8")
         self.grpInfo = QtWidgets.QGroupBox(widgetHexapawn)
-        self.grpInfo.setGeometry(QtCore.QRect(20, 370, 341, 41))
+        self.grpInfo.setGeometry(QtCore.QRect(20, 360, 341, 51))
         self.grpInfo.setTitle("")
         self.grpInfo.setObjectName("grpInfo")
         self.lblPlayerToMove = QtWidgets.QLabel(self.grpInfo)
@@ -70,6 +69,20 @@ class Ui_widgetHexapawn(object):
         self.btnReset = QtWidgets.QPushButton(self.grpInfo)
         self.btnReset.setGeometry(QtCore.QRect(240, 10, 75, 23))
         self.btnReset.setObjectName("btnReset")
+        self.grpComputer = QtWidgets.QGroupBox(widgetHexapawn)
+        self.grpComputer.setGeometry(QtCore.QRect(370, 10, 231, 401))
+        self.grpComputer.setObjectName("grpComputer")
+        self.btnComputerMove = QtWidgets.QPushButton(self.grpComputer)
+        self.btnComputerMove.setGeometry(QtCore.QRect(10, 20, 211, 191))
+        self.btnComputerMove.setText("")
+        self.btnComputerMove.setObjectName("btnComputerMove")
+        self.grpMoves = QtWidgets.QGroupBox(self.grpComputer)
+        self.grpMoves.setGeometry(QtCore.QRect(10, 220, 211, 141))
+        self.grpMoves.setTitle("")
+        self.grpMoves.setObjectName("grpMoves")
+        self.btnMoveRandomSelect = QtWidgets.QPushButton(self.grpComputer)
+        self.btnMoveRandomSelect.setGeometry(QtCore.QRect(14, 370, 211, 23))
+        self.btnMoveRandomSelect.setObjectName("btnMoveRandomSelect")
 
         self.retranslateUi(widgetHexapawn)
         QtCore.QMetaObject.connectSlotsByName(widgetHexapawn)
@@ -77,8 +90,11 @@ class Ui_widgetHexapawn(object):
     def retranslateUi(self, widgetHexapawn):
         _translate = QtCore.QCoreApplication.translate
         widgetHexapawn.setWindowTitle(_translate("widgetHexapawn", "Hexapawn"))
+        self.grpBoard.setTitle(_translate("widgetHexapawn", "Board"))
         self.lblPlayerToMove.setText(_translate("widgetHexapawn", "Player To Move:"))
         self.btnReset.setText(_translate("widgetHexapawn", "Reset"))
+        self.grpComputer.setTitle(_translate("widgetHexapawn", "Computer"))
+        self.btnMoveRandomSelect.setText(_translate("widgetHexapawn", "  RANDOM SELECT"))
 
 
 if __name__ == "__main__":
