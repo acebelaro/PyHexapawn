@@ -526,6 +526,47 @@ class Computer():
 
     def __init__(self) -> None:
         pass
+    
+    @staticmethod
+    def _createMirroredBox(box:Box)->Box:
+        """
+        Creates mirror for box.
+
+        Parameter
+        ---------
+        box : Box
+            Box to create mirror from.
+
+        Returns
+        ---------
+        Box : Mirrored box.
+        """
+        assert not box == None
+        setting = []
+        tilePositions = box.getTilePositions()
+        for row in range(SIZE):
+            rowStr = []
+            for col in reversed(range(SIZE)):
+                pawn = tilePositions[row][col]
+                if pawn == None:
+                    rowStr.append("-")
+                elif pawn.color == Color.BLACK:
+                    rowStr.append("B")
+                elif pawn.color == Color.WHITE:
+                    rowStr.append("W")
+            setting.append(" ".join(rowStr))
+        newMoves = []
+        reversedCol = list(reversed(range(SIZE)))
+        for move in box.moves:
+            newPosition = Position(move.position.row,reversedCol[move.position.col])
+            newMovement = Movement.FORWARD
+            if move.movement == Movement.DIAGONAL_LEFT:
+                newMovement = Movement.DIAGONAL_RIGHT
+            elif move.movement == Movement.DIAGONAL_RIGHT:
+                newMovement = Movement.DIAGONAL_LEFT
+            newMoves.append(Move(newPosition,move.color,newMovement))
+        box = Box( box.id, box.turn, setting, newMoves )
+        return box
 
     ######################################################################
     #                          public functions                          #
@@ -556,4 +597,11 @@ class Computer():
                     Board.arePawnsEqual(box._blackPawns,currentBoard._blackPawns):
                     boxForTurn = box
                     break
+                elif box.arePawnPositionsSymmetric() == False:
+                    # try for mirrored
+                    mirroredBox = Computer._createMirroredBox(box)
+                    if Board.arePawnsEqual(mirroredBox._whitePawns,currentBoard._whitePawns) and\
+                        Board.arePawnsEqual(mirroredBox._blackPawns,currentBoard._blackPawns):
+                        boxForTurn = mirroredBox
+                        break
         return boxForTurn

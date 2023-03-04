@@ -35,6 +35,25 @@ class TestBoardUtil():
     @staticmethod
     def setBoard(board:Board,setting:list):
         Box._setPawnsFromStringSetup(board,setting)
+        
+    @staticmethod
+    def assertBoard(self,board:Board,expectedSetting:list):
+        """
+        Asserts pawn positions in board.
+        """
+        targetPositions = TestBoardUtil.getTargetPositions(expectedSetting)
+        for row in range(SIZE):
+            for col in range(SIZE):
+                char = targetPositions[row][col]
+                pawn = board._getPawnInPosition(Position(row,col))
+                if char == "W":
+                    self.assertIsNotNone(pawn,"Expecting white pawn.")
+                    self.assertEqual(pawn.color,Color.WHITE,"Expecting white pawn.")
+                elif char == "B":
+                    self.assertIsNotNone(pawn,"Expecting white pawn.")
+                    self.assertEqual(pawn.color,Color.BLACK,"Expecting white pawn.")
+                elif char == "-":
+                    self.assertIsNone(pawn,"Expecting no pawn.")
 
 class TestPosition(unittest.TestCase):
 
@@ -95,19 +114,7 @@ class TestBoard(unittest.TestCase):
         """
         Asserts pawn positions in board.
         """
-        targetPositions = TestBoardUtil.getTargetPositions(expectedSetting)
-        for row in range(SIZE):
-            for col in range(SIZE):
-                char = targetPositions[row][col]
-                pawn = board._getPawnInPosition(Position(row,col))
-                if char == "W":
-                    self.assertIsNotNone(pawn,"Expecting white pawn.")
-                    self.assertEqual(pawn.color,Color.WHITE,"Expecting white pawn.")
-                elif char == "B":
-                    self.assertIsNotNone(pawn,"Expecting white pawn.")
-                    self.assertEqual(pawn.color,Color.BLACK,"Expecting white pawn.")
-                elif char == "-":
-                    self.assertIsNone(pawn,"Expecting no pawn.")
+        TestBoardUtil.assertBoard(self,board,expectedSetting)
 
     ### Board._getPawnInPosition ###
 
@@ -1800,6 +1807,74 @@ class TestBoard(unittest.TestCase):
         bPawns = []
         # execute
         res = Board.arePawnsEqual(aPawns,bPawns)
+        # assert
+        self.assertTrue(res)
+
+    ### Board.arePawnPositionsSymmetric ###
+
+    def test_arePawnPositionsSymmetric_asymmetric(self):
+        board = Board()
+        # setup
+        TestBoardUtil.setBoard(
+            board,
+            [
+                "B B -",
+                "- - -",
+                "W W W"
+            ])
+        # execute
+        res = board.arePawnPositionsSymmetric()
+        # assert
+        self.assertFalse(res)
+        # setup
+        TestBoardUtil.setBoard(
+            board,
+            [
+                "B B B",
+                "- - W",
+                "- W -"
+            ])
+        # execute
+        res = board.arePawnPositionsSymmetric()
+        # assert
+        self.assertFalse(res)
+        # setup
+        TestBoardUtil.setBoard(
+            board,
+            [
+                "B B B",
+                "- - -",
+                "W W -"
+            ])
+        # execute
+        res = board.arePawnPositionsSymmetric()
+        # assert
+        self.assertFalse(res)
+
+    def test_arePawnPositionsSymmetric_symmetric(self):
+        board = Board()
+        # setup
+        TestBoardUtil.setBoard(
+            board,
+            [
+                "- B -",
+                "W B W",
+                "- W -",
+            ])
+        # execute
+        res = board.arePawnPositionsSymmetric()
+        # assert
+        self.assertTrue(res)
+        # setup
+        TestBoardUtil.setBoard(
+            board,
+            [
+                "- B -",
+                "- - -",
+                "- W -",
+            ])
+        # execute
+        res = board.arePawnPositionsSymmetric()
         # assert
         self.assertTrue(res)
 

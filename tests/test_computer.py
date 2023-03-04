@@ -11,6 +11,7 @@
 """
 import unittest
 from hexapawn.computer import *
+from tests.test_board import TestBoardUtil
 
 BOARD_ROW_SETTING_REGEX = "^(B|W|-) (B|W|-) (B|W|-)$"
 
@@ -211,3 +212,92 @@ class TestComputer(unittest.TestCase):
 
     def test_computer(self):
         computer = Computer()
+
+    ### Computer._createMirroredBox ###
+
+    def test_createMirroredBox(self):
+        # setup
+        box = Box(
+            "4D", 4,
+            [
+                "B B -",
+                "W - W",
+                "- - W"
+            ],
+            [
+                Move(Position(0,1),MoveColor.GREEN,Movement.DIAGONAL_LEFT),
+                Move(Position(0,1),MoveColor.RED,Movement.FORWARD),
+                Move(Position(0,1),MoveColor.BLUE,Movement.DIAGONAL_RIGHT)
+            ]
+        )
+        # execute
+        mirroredBox = Computer._createMirroredBox(box)
+        # assert
+        TestBoardUtil.assertBoard(self,mirroredBox,[
+                "- B B",
+                "W - W",
+                "W - -"
+        ])
+        index = 0
+        move = mirroredBox.moves[index]
+        self.assertEqual(move.position.row,0)
+        self.assertEqual(move.position.col,1)
+        self.assertEqual(move.color,MoveColor.GREEN)
+        self.assertEqual(move.movement,Movement.DIAGONAL_RIGHT)
+        index+=1
+        move = mirroredBox.moves[index]
+        self.assertEqual(move.position.row,0)
+        self.assertEqual(move.position.col,1)
+        self.assertEqual(move.color,MoveColor.RED)
+        self.assertEqual(move.movement,Movement.FORWARD)
+        index+=1
+        move = mirroredBox.moves[index]
+        self.assertEqual(move.position.row,0)
+        self.assertEqual(move.position.col,1)
+        self.assertEqual(move.color,MoveColor.BLUE)
+        self.assertEqual(move.movement,Movement.DIAGONAL_LEFT)
+        index+=1
+        # setup
+        box = Box(
+            "6G", 6,
+            [
+                "- - B",
+                "B W -",
+                "- - -"
+            ],
+            [
+                Move(Position(0,2),MoveColor.RED,Movement.DIAGONAL_LEFT),
+                Move(Position(0,2),MoveColor.BLUE,Movement.FORWARD),
+                Move(Position(1,0),MoveColor.GREEN,Movement.FORWARD)
+            ]
+        )
+        # execute
+        mirroredBox = Computer._createMirroredBox(box)
+        # assert
+        TestBoardUtil.assertBoard(self,mirroredBox,[
+                "B - -",
+                "- W B",
+                "- - -"
+        ])
+        index = 0
+
+        move = mirroredBox.moves[index]
+        self.assertEqual(move.position.row,0)
+        self.assertEqual(move.position.col,0)
+        self.assertEqual(move.color,MoveColor.RED)
+        self.assertEqual(move.movement,Movement.DIAGONAL_RIGHT)
+        index+=1
+        
+        move = mirroredBox.moves[index]
+        self.assertEqual(move.position.row,0)
+        self.assertEqual(move.position.col,0)
+        self.assertEqual(move.color,MoveColor.BLUE)
+        self.assertEqual(move.movement,Movement.FORWARD)
+        index+=1
+        
+        move = mirroredBox.moves[index]
+        self.assertEqual(move.position.row,1)
+        self.assertEqual(move.position.col,2)
+        self.assertEqual(move.color,MoveColor.GREEN)
+        self.assertEqual(move.movement,Movement.FORWARD)
+        index+=1
