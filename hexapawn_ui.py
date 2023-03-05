@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_widgetHexapawn(object):
     def setupUi(self, widgetHexapawn):
         widgetHexapawn.setObjectName("widgetHexapawn")
-        widgetHexapawn.resize(929, 421)
+        widgetHexapawn.resize(932, 790)
         self.grpBoard = QtWidgets.QGroupBox(widgetHexapawn)
         self.grpBoard.setGeometry(QtCore.QRect(20, 10, 341, 341))
         self.grpBoard.setObjectName("grpBoard")
@@ -95,6 +95,9 @@ class Ui_widgetHexapawn(object):
         item = QtWidgets.QTableWidgetItem()
         self.tableResults.setHorizontalHeaderItem(0, item)
         self.tableResults.horizontalHeader().setStretchLastSection(True)
+        self.grpBoxes = QtWidgets.QGroupBox(widgetHexapawn)
+        self.grpBoxes.setGeometry(QtCore.QRect(20, 410, 901, 371))
+        self.grpBoxes.setObjectName("grpBoxes")
 
         self.retranslateUi(widgetHexapawn)
         QtCore.QMetaObject.connectSlotsByName(widgetHexapawn)
@@ -110,6 +113,7 @@ class Ui_widgetHexapawn(object):
         self.btnResetIntelligence.setText(_translate("widgetHexapawn", "RESET INTELLIGENCE"))
         item = self.tableResults.horizontalHeaderItem(0)
         item.setText(_translate("widgetHexapawn", "Results"))
+        self.grpBoxes.setTitle(_translate("widgetHexapawn", "Boxes"))
 
 
 if __name__ == "__main__":

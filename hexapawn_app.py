@@ -55,9 +55,13 @@ class HexapawnApp():
     
         DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
-        DrawUtil.drawBox(self._ui,self._currentBox,self._selectMove)
+        DrawUtil.drawCurrentBox(self._ui,self._currentBox,self._selectMove)
 
         self._setComputerMoveUi()
+
+        self._ui.grpMainBoxes = QtWidgets.QGroupBox(self._ui.grpBoxes)
+        self._ui.grpMainBoxes.move(5,15)
+        DrawUtil.drawBoxes(self._ui,self._computer)
 
     def _setupTiles(self)->None:
         """
@@ -148,7 +152,7 @@ class HexapawnApp():
             self._currentBox = self._computer.getBoxForCurrentBlackTurn(
                 self._gameManager.turn,
                 self._board)
-        DrawUtil.drawBox(self._ui,self._currentBox,self._selectMove)
+        DrawUtil.drawCurrentBox(self._ui,self._currentBox,self._selectMove)
         self._setComputerMoveUi()
 
     def _removeMoveCausingBlackPlayerLose(self)->MoveRecord:
@@ -325,6 +329,7 @@ class HexapawnApp():
                     redrawBoard = False
             if redrawBoard:
                 DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
+            DrawUtil.drawBoxes(self._ui,self._computer)
 
     def _reset(self):
         """
@@ -341,7 +346,7 @@ class HexapawnApp():
         DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
         DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
-        DrawUtil.drawBox(self._ui,self._currentBox,self._selectMove)
+        DrawUtil.drawCurrentBox(self._ui,self._currentBox,self._selectMove)
 
     def _resetIntelligence(self):
         """
@@ -350,6 +355,7 @@ class HexapawnApp():
         self._ui.tableResults.setRowCount(0)
         self._computer.resetIntelligence()
         self._reset()
+        DrawUtil.drawBoxes(self._ui,self._computer)
 
     ######################################################################
     #                          public functions                          #
