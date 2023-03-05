@@ -88,10 +88,17 @@ class HexapawnApp():
         self._ui.btnPawn8.clicked.connect(
             lambda event:self._boardTileClicked(event,Position(2,2)))
         
-    def _setComputerMoveUi(self)->None:
+    def _setComputerMoveUi(self,enabled:bool=None)->None:
         """
+        Enables or disables computer move ui.
+
+        Parameter
+        ---------
+        enabled : bool
+            Boolean for enable. If None, enable if turn of Black player.
         """
-        enabled = True if self._gameManager.turnPlayer == Player.BLACK else False
+        if enabled == None:
+            enabled = True if self._gameManager.turnPlayer == Player.BLACK else False
         self._ui.grpMoves.setEnabled(enabled)
         self._ui.btnMoveRandomSelect.setEnabled(enabled)
 
@@ -123,17 +130,12 @@ class HexapawnApp():
         remainingMoves = list(filter(lambda m : not m.removed,self._currentBox.moves))
         move = None
         if len(remainingMoves) > 0:
-            while True:
-                rand = random.choice(range(len(remainingMoves)))
-                move = remainingMoves[rand]
-                if not move.removed:
-                    break
-        else:
-            # no other choice
-            rand = random.choice(range(len(self._currentBox.moves)))
-            move = self._currentBox.moves[rand]
-        if not move == None:            
+            rand = random.choice(range(len(remainingMoves)))
+            move = remainingMoves[rand]
             self._selectMove(move)
+        else:
+            # move manually
+            pass
 
     def _nextPlayer(self)->None:
         """
@@ -142,10 +144,10 @@ class HexapawnApp():
         self._selectedPawnPosition = None
         self._gameManager.nextPlayer()
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
-        self._setComputerMoveUi()
         if self._gameManager.turnPlayer == Player.BLACK:
             self._currentBox = self._computer.getBoxForCurrentBlackTurn(self._gameManager.turn,self._board)
         DrawUtil.drawBox(self._ui,self._currentBox,self._selectMove)
+        self._setComputerMoveUi()
 
     def _declareWinner(self,winner:Player)->None:
         """
@@ -169,6 +171,26 @@ class HexapawnApp():
         item.setText(winDetails)
         self._ui.tableResults.setItem(index, 0, item)        
 
+    def _findMoveInCurrentBox(self,pawn:Pawn,newPosition:Position)->None:
+        """
+        Finds the equivalent move in current box.
+        The equivalent move will be set to last move,
+        will be used to remmove the move if it resulted to lost.
+
+        Parameter
+        ---------
+        pawn : Pawn
+            Pawn to be moved.
+        newPosition: Position
+            New position of moved pawn
+        """
+        # Find move to evaluate
+        for move in self._currentBox.moves:
+            if pawn.inPosition(move.position) and\
+                arePositionsEqual(move.newPosition(),newPosition):
+                self._lastMove = move
+                break
+
     def _movePawn(self,pawn:Pawn,newPosition:Position)->None:
         """
         Moves pawn. Also handles setting of next player and
@@ -181,6 +203,12 @@ class HexapawnApp():
         newPosition: Position
             New position of moved pawn
         """
+        assert not pawn == None
+        assert not newPosition == None
+        if pawn.color == Color.BLACK:
+            if not self._currentBox == None:
+                # Find move to evaluate
+                self._findMoveInCurrentBox(pawn,newPosition)
         res = self._board.movePawn(pawn,newPosition)
         if res == MovePawnResult.NO_WINNER:
             self._nextPlayer()
@@ -189,13 +217,14 @@ class HexapawnApp():
             pass
         else:
             # has winnner
+            self._setComputerMoveUi(False)
             winner = None
             if res == MovePawnResult.WHITE_WIN:
                 winner = Player.WHITE
             elif res == MovePawnResult.BLACK_WIN:
                 winner = Player.BLACK
             self._declareWinner(winner)
-
+        
     def _handleSelectedPawnMovement(
             self,
             pawnInSelectedPosition:Pawn,
@@ -220,8 +249,7 @@ class HexapawnApp():
             "Selected position does not contain pawn"
         
         if not pawnInClickedTile == None:
-            if self._selectedPawnPosition.row == clickedTilePosition.row and\
-                self._selectedPawnPosition.col == clickedTilePosition.col:
+            if arePositionsEqual(self._selectedPawnPosition,clickedTilePosition):
                 # deselect since selected pawn reselected
                 self._selectedPawnPosition = None
             else:
@@ -250,39 +278,38 @@ class HexapawnApp():
             Indicator parameter of which tile was clicked. See initialization
             of board tiles in __init__.
         """
-        if self._gameManager.ended or self._gameManager.turnPlayer == Player.BLACK:
-            return
-        tilePositions = self._board.getTilePositions()
-        pawnInClickedTile = tilePositions[clickedTilePosition.row][clickedTilePosition.col]
-        pawnClicked = True if not pawnInClickedTile == None else False
-        pawnClickedMatchedTurnPlayer = False
-        if pawnClicked:
-            turnPlayer = self._gameManager.turnPlayer
-            pawnClickedMatchedTurnPlayer = \
-                (turnPlayer == Player.WHITE and\
-                    pawnInClickedTile.color == Color.WHITE) or\
-                (turnPlayer == Player.BLACK and\
-                    pawnInClickedTile.color == Color.BLACK)
-        redrawBoard = True
-        if not self._selectedPawnPosition == None:
-            selectedRow = self._selectedPawnPosition.row
-            selectedCol = self._selectedPawnPosition.col
-            pawnInSelectedPosition = tilePositions[selectedRow][selectedCol]
-            self._handleSelectedPawnMovement(
-                pawnInSelectedPosition,
-                clickedTilePosition,
-                pawnInClickedTile,
-                pawnClickedMatchedTurnPlayer)
-        else:
-            # no selected pawn
-            if pawnClickedMatchedTurnPlayer:
-                # set selected
-                self._selectedPawnPosition = clickedTilePosition
+        if not self._gameManager.ended:
+            tilePositions = self._board.getTilePositions()
+            pawnInClickedTile = tilePositions[clickedTilePosition.row][clickedTilePosition.col]
+            pawnClicked = True if not pawnInClickedTile == None else False
+            pawnClickedMatchedTurnPlayer = False
+            if pawnClicked:
+                turnPlayer = self._gameManager.turnPlayer
+                pawnClickedMatchedTurnPlayer = \
+                    (turnPlayer == Player.WHITE and\
+                        pawnInClickedTile.color == Color.WHITE) or\
+                    (turnPlayer == Player.BLACK and\
+                        pawnInClickedTile.color == Color.BLACK)
+            redrawBoard = True
+            if not self._selectedPawnPosition == None:
+                selectedRow = self._selectedPawnPosition.row
+                selectedCol = self._selectedPawnPosition.col
+                pawnInSelectedPosition = tilePositions[selectedRow][selectedCol]
+                self._handleSelectedPawnMovement(
+                    pawnInSelectedPosition,
+                    clickedTilePosition,
+                    pawnInClickedTile,
+                    pawnClickedMatchedTurnPlayer)
             else:
-                # attemmpt to select rival pawn
-                redrawBoard = False
-        if redrawBoard:
-            DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
+                # no selected pawn
+                if pawnClickedMatchedTurnPlayer:
+                    # set selected
+                    self._selectedPawnPosition = clickedTilePosition
+                else:
+                    # attemmpt to select rival pawn
+                    redrawBoard = False
+            if redrawBoard:
+                DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
 
     def _reset(self):
         """

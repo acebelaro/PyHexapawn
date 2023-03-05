@@ -11,6 +11,7 @@
 """
 from enum import Enum, IntEnum, auto
 import math
+from types import MethodType
 from PyQt5.QtCore import Qt
 
 SIZE = 3
@@ -36,6 +37,26 @@ class Position():
         self.row = row
         self.col = col
 
+def arePositionsEqual(positionA:Position,positionB:Position)->None:
+    """
+    Checks two positions are equal
+    
+    Parameter
+    ---------
+    positionA : Position
+    positionB : Position
+
+    Returns
+    ---------
+    - True  : Positions are equal
+    - False : Positions are not equal
+    """
+    assert not positionA == None and type(positionA) == Position
+    assert not positionB == None and type(positionB) == Position
+    return True if positionA.row == positionB.row and\
+        positionA.col == positionB.col\
+            else False
+
 class Pawn():
     """
     Pawn.
@@ -43,6 +64,10 @@ class Pawn():
     def __init__(self,color:Color,position:Position) -> None:
         self.color = color
         self.position = position
+
+    ######################################################################
+    #                          public functions                          #
+    ######################################################################
 
     def inPosition(self,position:Position)->bool:
         """
@@ -58,10 +83,7 @@ class Pawn():
         - True  : Pawn position is equal
         - False : Pawn position is not equal
         """
-        assert not position == None
-        return True if self.position.row == position.row\
-            and self.position.col == position.col\
-            else False
+        return arePositionsEqual(self.position,position)
 
 class MovePawnResult(IntEnum):
     """
@@ -154,6 +176,51 @@ class Board():
                     # taking rival pawn
                     res = True
         return res
+
+    def _hasPossibleMove(
+            self,
+            pawns:list,
+            pawnColor:Color,
+            rowVerifier:MethodType,
+            forwardInc:int):
+        """
+        """
+        assert not pawns == None and type(pawns) == list
+        assert type(pawnColor) == Color
+        assert not rowVerifier == None
+        assert type(forwardInc) == int and (forwardInc == 1 or forwardInc == -1)
+        pawnColorToTake = Color.WHITE\
+            if pawnColor == Color.BLACK else\
+                Color.BLACK
+        res = False
+        for pawn in pawns:
+            pawnPosition = pawn.position
+            if rowVerifier(pawnPosition.row):
+                pawnInFront = self._getPawnInPosition(
+                    Position(pawnPosition.row+forwardInc,
+                             pawnPosition.col))
+                if pawnInFront == None:
+                    # can move forward
+                    res = True
+                    break
+                if pawnPosition.col > 0 and pawnPosition.col < (SIZE-1):
+                    pawnInDiagonalLeft = self._getPawnInPosition(
+                        Position(pawnPosition.row+forwardInc,
+                                pawnPosition.col-1))
+                    if not pawnInDiagonalLeft == None and\
+                        pawnInDiagonalLeft.color == pawnColorToTake:
+                        # can move diagonal left to take pawn
+                        res = True
+                        break
+                    pawnInDiagonalRight = self._getPawnInPosition(
+                        Position(pawnPosition.row+forwardInc,
+                                pawnPosition.col+1))
+                    if not pawnInDiagonalRight == None and\
+                        pawnInDiagonalRight.color == pawnColorToTake:
+                        # can move diagonal right to take pawn
+                        res = True
+                        break
+        return res
     
     def _blackPawnHasPossibleMove(self)->bool:
         """
@@ -164,35 +231,8 @@ class Board():
         - True  : at least one black pawn can move
         - False : no black pawn can move
         """
-        res = False
-        for blackPawn in self._blackPawns:
-            pawnPosition = blackPawn.position
-            if pawnPosition.row < (SIZE-1):
-                pawnInFront = self._getPawnInPosition(
-                    Position(pawnPosition.row+1,
-                             pawnPosition.col))
-                if pawnInFront == None:
-                    # can move forward
-                    res = True
-                    break
-                if pawnPosition.col > 0 and pawnPosition.col < (SIZE-1):
-                    pawnInDiagonalLeft = self._getPawnInPosition(
-                        Position(pawnPosition.row+1,
-                                pawnPosition.col-1))
-                    if not pawnInDiagonalLeft == None and\
-                        pawnInDiagonalLeft.color == Color.WHITE:
-                        # can move diagonal left to take pawn
-                        res = True
-                        break
-                    pawnInDiagonalRight = self._getPawnInPosition(
-                        Position(pawnPosition.row+1,
-                                pawnPosition.col+1))
-                    if not pawnInDiagonalRight == None and\
-                        pawnInDiagonalRight.color == Color.WHITE:
-                        # can move diagonal right to take pawn
-                        res = True
-                        break
-        return res
+        rowVerifier = lambda row : row < (SIZE-1)
+        return self._hasPossibleMove(self._blackPawns,Color.BLACK,rowVerifier,1)
     
     def _whitePawnHasPossibleMove(self)->bool:
         """
@@ -203,35 +243,8 @@ class Board():
         - True  : at least one white pawn can move
         - False : no white pawn can move
         """
-        res = False
-        for whitePawn in self._whitePawns:
-            pawnPosition = whitePawn.position
-            if pawnPosition.row > 0:
-                pawnInFront = self._getPawnInPosition(
-                    Position(pawnPosition.row-1,
-                             pawnPosition.col))
-                if pawnInFront == None:
-                    # can move forward
-                    res = True
-                    break
-                if pawnPosition.col > 0 and pawnPosition.col < (SIZE-1):
-                    pawnInDiagonalLeft = self._getPawnInPosition(
-                        Position(pawnPosition.row-1,
-                                pawnPosition.col-1))
-                    if not pawnInDiagonalLeft == None and\
-                        pawnInDiagonalLeft.color == Color.BLACK:
-                        # can move diagonal left to take pawn
-                        res = True
-                        break
-                    pawnInDiagonalRight = self._getPawnInPosition(
-                        Position(pawnPosition.row-1,
-                                pawnPosition.col+1))
-                    if not pawnInDiagonalRight == None and\
-                        pawnInDiagonalRight.color == Color.BLACK:
-                        # can move diagonal right to take pawn
-                        res = True
-                        break
-        return res
+        rowVerifier = lambda row : row > 0
+        return self._hasPossibleMove(self._whitePawns,Color.WHITE,rowVerifier,-1)
 
     def _checkForWinner(self,movedPawn:Pawn)->MovePawnResult:
         """
@@ -373,8 +386,7 @@ class Board():
             for aPawn in aPawns:
                 bPawn = next((p for p in bPawns \
                              if p.color == aPawn.color and\
-                                p.position.row == aPawn.position.row and \
-                                p.position.col == aPawn.position.col), 
+                                arePositionsEqual(p.position,aPawn.position)), 
                              None)
                 if bPawn == None:
                     res = False
