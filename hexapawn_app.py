@@ -44,7 +44,7 @@ class HexapawnApp():
         self._buttonMap = []
         self._computer = Computer()
         self._currentBox = None
-        self._lastMove = None
+        self._recordedMoves = []
 
         self._selectedPawnPosition = None
 
@@ -112,7 +112,7 @@ class HexapawnApp():
             Move selected. Cannot be None.
         """
         assert not move == None and type(move) == Move
-        self._lastMove = move
+        self._recordedMoves.append(MoveRecord(self._gameManager.turn,move))
         tilePositions = self._board.getTilePositions()
         blackPawnToMove = tilePositions[move.position.row][move.position.col]
         newPosition = move.newPosition()
@@ -145,9 +145,28 @@ class HexapawnApp():
         self._gameManager.nextPlayer()
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
         if self._gameManager.turnPlayer == Player.BLACK:
-            self._currentBox = self._computer.getBoxForCurrentBlackTurn(self._gameManager.turn,self._board)
+            self._currentBox = self._computer.getBoxForCurrentBlackTurn(
+                self._gameManager.turn,
+                self._board)
         DrawUtil.drawBox(self._ui,self._currentBox,self._selectMove)
         self._setComputerMoveUi()
+
+    def _removeMoveCausingBlackPlayerLose(self)->MoveRecord:
+        """
+        Finds the latest move record causing black player lost that is not yet
+        tagged as removed move.
+
+        Returns
+        ---------
+        MoveRecord : Move record with move causing black player lost. None if not found.
+        """
+        moveRecord = None
+        if len(self._recordedMoves)>0:
+            for recordedMove in reversed(self._recordedMoves):
+                if not recordedMove.move.removed:
+                    moveRecord = recordedMove
+                    break
+        return moveRecord
 
     def _declareWinner(self,winner:Player)->None:
         """
@@ -155,18 +174,16 @@ class HexapawnApp():
         """
         self._gameManager.endGame()
         DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
-
         # update result
         index = self._ui.tableResults.rowCount()
         self._ui.tableResults.setRowCount(index + 1)
-
         winDetails = winner.name
-        if winner == Player.WHITE and not self._lastMove == None:
-            previousTurn = self._gameManager.turn-1
-            winDetails = "{} : Removed {} for turn {}."\
-                .format(winDetails,self._lastMove.color.name,previousTurn)
-            self._lastMove.remove()
-
+        if winner == Player.WHITE and len(self._recordedMoves)>0:
+            moveRecord = self._removeMoveCausingBlackPlayerLose()
+            if not moveRecord == None:
+                winDetails = "{} : Removed {} for turn {}."\
+                    .format(winDetails,moveRecord.move.color.name,moveRecord.turn)
+                moveRecord.move.remove()
         item = QtWidgets.QTableWidgetItem()
         item.setText(winDetails)
         self._ui.tableResults.setItem(index, 0, item)        
@@ -188,7 +205,7 @@ class HexapawnApp():
         for move in self._currentBox.moves:
             if pawn.inPosition(move.position) and\
                 arePositionsEqual(move.newPosition(),newPosition):
-                self._lastMove = move
+                self._recordedMoves.append(MoveRecord(self._gameManager.turn,move))
                 break
 
     def _movePawn(self,pawn:Pawn,newPosition:Position)->None:
@@ -244,10 +261,8 @@ class HexapawnApp():
         pawnInClickedTile : Pawn
             Pawn in clicked tile. Can be None indicating tile clicked is empty.
         """
-
         assert not pawnInSelectedPosition == None,\
             "Selected position does not contain pawn"
-        
         if not pawnInClickedTile == None:
             if arePositionsEqual(self._selectedPawnPosition,clickedTilePosition):
                 # deselect since selected pawn reselected
@@ -315,11 +330,12 @@ class HexapawnApp():
         """
         Resets hexapawn.
         """
+        print("Reset game...")
         self._board.resetPawns()
         self._gameManager.reset()
         self._selectedPawnPosition = None
         self._currentBox = None
-        self._lastMove = None
+        self._recordedMoves = []
 
         DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)

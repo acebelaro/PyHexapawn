@@ -91,6 +91,31 @@ class Move():
         """
         self.removed = False
 
+class MoveRecord():
+    """
+    Move record.
+    """
+
+    turn = -1
+    """Turn of move."""
+
+    move = None
+    """Move executed."""
+    
+    def __init__(self,turn:int,move:Move) -> None:
+        """
+        Parameter
+        ---------
+        turn : int
+            Turn of move.
+        move : Move
+            Move executed.
+        """
+        assert type(turn) == int and turn >=1
+        assert not move == None and type(move) == Move
+        self.turn = turn
+        self.move = move
+
 class Box(Board):
     """
     Consist of possible moves specified by color.
