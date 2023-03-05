@@ -91,31 +91,6 @@ class Move():
         """
         self.removed = False
 
-class MoveRecord():
-    """
-    Move record.
-    """
-
-    turn = -1
-    """Turn of move."""
-
-    move = None
-    """Move executed."""
-    
-    def __init__(self,turn:int,move:Move) -> None:
-        """
-        Parameter
-        ---------
-        turn : int
-            Turn of move.
-        move : Move
-            Move executed.
-        """
-        assert type(turn) == int and turn >=1
-        assert not move == None and type(move) == Move
-        self.turn = turn
-        self.move = move
-
 class Box(Board):
     """
     Consist of possible moves specified by color.
@@ -266,7 +241,31 @@ class Box(Board):
         """
         for move in self.moves:
             move.reset()
-        pass
+
+class MoveRecord():
+    """
+    Move record.
+    """
+
+    box = None
+    """Box containing the move."""
+
+    move = None
+    """Move executed."""
+    
+    def __init__(self,box:Box,move:Move) -> None:
+        """
+        Parameter
+        ---------
+        box : Box
+            Box containing the move.
+        move : Move
+            Move executed.
+        """
+        assert not box == None and type(box) == Box
+        assert not move == None and type(move) == Move
+        self.box = box
+        self.move = move
 
 class Computer():
     """
@@ -573,8 +572,32 @@ class Computer():
     """Boxes for black player moves."""
 
     def __init__(self) -> None:
-        pass
+
+        self._addMirrorsOfAsymmetricBoxes()
+
+        self._boxes = sorted(self._boxes, key=lambda x: x.id, reverse=False)
     
+    def _addMirrorsOfAsymmetricBoxes(self)->None:
+        """
+        Adds mirrors of asymmetric boxexs.
+        """
+        mirroedBoxes = []
+        # add symetric moves
+        for box in self._boxes:
+            if box.arePawnPositionsSymmetric() == False:
+                # creat mirrored box
+                mirroredBox = Computer._createMirroredBox(box)
+                existingBox = next((b for b in self._boxes if areBoardsEqual(b,mirroredBox)),None)
+                if existingBox == None:
+                    print("Adding mirrored {}".format(mirroredBox.id))
+                    mirroedBoxes.append(mirroredBox)
+                else:
+                    print("{} is mirror of {}.".format(box.id,existingBox.id))
+        if len(mirroedBoxes)>0:
+            # add mirrored boxes
+            for box in mirroedBoxes:
+                self._boxes.append(box)
+                
     @staticmethod
     def _createMirroredBox(box:Box)->Box:
         """
@@ -613,7 +636,7 @@ class Computer():
             elif move.movement == Movement.DIAGONAL_RIGHT:
                 newMovement = Movement.DIAGONAL_LEFT
             newMoves.append(Move(newPosition,move.color,newMovement))
-        box = Box( box.id, box.turn, newSetting, newMoves )
+        box = Box( "{}r".format(box.id), box.turn, newSetting, newMoves )
         return box
 
     ######################################################################
@@ -641,20 +664,9 @@ class Computer():
         boxForTurn = None
         boxesWithTurn = list(filter(lambda x : x.turn == turn, self._boxes))
         for box in boxesWithTurn:
-            if Board.arePawnsEqual(box._whitePawns,currentBoard._whitePawns) and\
-                Board.arePawnsEqual(box._blackPawns,currentBoard._blackPawns):
+            if areBoardsEqual(box,currentBoard):
                 boxForTurn = box
-                break
-        if boxForTurn == None:
-            for box in boxesWithTurn:
-                if box.arePawnPositionsSymmetric() == False:
-                    # try for mirrored
-                    mirroredBox = Computer._createMirroredBox(box)
-                    if Board.arePawnsEqual(mirroredBox._whitePawns,currentBoard._whitePawns) and\
-                        Board.arePawnsEqual(mirroredBox._blackPawns,currentBoard._blackPawns):
-                        boxForTurn = mirroredBox
-                        self._boxes.append(mirroredBox) # append
-                        break     
+                break  
         return boxForTurn
     
     def resetIntelligence(self)->None:

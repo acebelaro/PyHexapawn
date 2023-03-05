@@ -85,6 +85,37 @@ class Pawn():
         """
         return arePositionsEqual(self.position,position)
 
+def arePawnsEqual(aPawns:list,bPawns:list)->bool:
+    """
+    Checks if two pawn lists are equal.
+
+    Parameter
+    ---------
+    aPawns : list
+        Pawn list A.
+    bPawns : list
+        Pawn list B.
+
+    Returns
+    ---------
+    True - list of pawns are equal.
+    False - list of pawns are not equal.
+    """
+    assert type(aPawns) == list and all(type(a)==Pawn for a in aPawns)
+    assert type(bPawns) == list and all(type(b)==Pawn for b in bPawns)
+    res = False
+    if len(aPawns) == len(bPawns):
+        res = True
+        for aPawn in aPawns:
+            bPawn = next((p for p in bPawns \
+                            if p.color == aPawn.color and\
+                            arePositionsEqual(p.position,aPawn.position)), 
+                            None)
+            if bPawn == None:
+                res = False
+                break
+    return res
+
 class MovePawnResult(IntEnum):
     """
     To indicate result of pawn movement regarding winner declaration.
@@ -360,38 +391,6 @@ class Board():
             # check for winning
             res = self._checkForWinner(pawn)
         return res
-    
-    @staticmethod
-    def arePawnsEqual(aPawns:list,bPawns:list)->bool:
-        """
-        Checks if two pawn lists are equal.
-
-        Parameter
-        ---------
-        aPawns : list
-            Pawn list A.
-        bPawns : list
-            Pawn list B.
-
-        Returns
-        ---------
-        True - list of pawns are equal.
-        False - list of pawns are not equal.
-        """
-        res = False
-        assert type(aPawns) == list and all(type(a)==Pawn for a in aPawns)
-        assert type(bPawns) == list and all(type(b)==Pawn for b in bPawns)
-        if len(aPawns) == len(bPawns):
-            res = True
-            for aPawn in aPawns:
-                bPawn = next((p for p in bPawns \
-                             if p.color == aPawn.color and\
-                                arePositionsEqual(p.position,aPawn.position)), 
-                             None)
-                if bPawn == None:
-                    res = False
-                    break
-        return res
 
     def arePawnPositionsSymmetric(self)->bool:
         """
@@ -437,3 +436,21 @@ class Board():
             Pawn(Color.BLACK,Position(0,2))
         ]
 
+def areBoardsEqual(boardA:Board,boardB:Board)->bool:
+    """
+    Checks if two boards are equal.
+
+    Parameter
+    ---------
+    boardA : Board
+    boardB : Board
+
+    Returns
+    ---------
+    True - Boards are equal.
+    False - Boards are not equal.
+    """
+    assert not boardA == None and isinstance(boardA,Board)
+    assert not boardB == None and isinstance(boardB,Board)
+    return arePawnsEqual(boardA._whitePawns,boardB._whitePawns) and\
+        arePawnsEqual(boardA._blackPawns,boardB._blackPawns)

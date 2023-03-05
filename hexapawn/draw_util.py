@@ -16,7 +16,7 @@ from types import MethodType
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtGui import QPainter, QPixmap, QPen, QPolygon
 from PyQt5.QtCore import Qt, QSize, QPoint
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout
 
 from hexapawn.game_manager import *
 from hexapawn.board import *
@@ -36,7 +36,7 @@ TILE_BUTTON_SIZE = 96
 PAWN_DRAWING_SIZE = 86
 PAWN_ELLIPSE_XY = (TILE_BUTTON_SIZE - PAWN_DRAWING_SIZE)/2
 
-"""Box boarrd draw constants."""
+"""Box board draw constants."""
 BOX_BOARD_TILE_SIZE = 60
 BOX_BOARD_DRAW_SIZE = SIZE * BOX_BOARD_TILE_SIZE
 BOX_BOARD_PAWN_SIZE = 40
@@ -44,6 +44,10 @@ BOX_BOARD_PAWNW_START_POINT_DIFF = (BOX_BOARD_TILE_SIZE-BOX_BOARD_PAWN_SIZE)/2
 BOX_BOARD_COLOR = QtGui.QColor(255,193,116)
 
 SELECT_MOVE_BUTTON_SIZE = QSize(160,15)
+MOVE_REMOVED_COLOR = QtGui.QColor(195,195,195)
+
+BOXES_BOARD_SIZE = 50
+BOX_COUNT_PER_ROW = 122
 
 MOVEMENT_POINTS_MAP = {
     Movement.FORWARD : [
@@ -115,6 +119,47 @@ class SelectMoveButtonWidget(QtWidgets.QWidget):
         """
         self.moveSelectFunc(self.move)
 
+class BoxInfoWidget(QtWidgets.QWidget):
+    """
+    """
+
+    def __init__(self,box:Box) -> None:
+        super().__init__()
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.setSpacing(0)
+        self.setLayout(layout)
+
+        # ID
+        self.lblID = QtWidgets.QLabel(box.id)
+        layout.addWidget(self.lblID)
+
+        # board button
+        btnBoard = QtWidgets.QPushButton()
+        btnBoard.setObjectName(box.id)
+        DrawUtil._drawBoxToButton(box,btnBoard,BOXES_BOARD_SIZE)
+        layout.addWidget(btnBoard)
+
+        # moves
+        hWidget = QtWidgets.QWidget()
+        hWidget.setStyleSheet("border: 1px solid black;")
+        hLayout = QtWidgets.QHBoxLayout(hWidget)
+        hLayout.setSpacing(0)
+        hWidget.setFixedWidth(BOXES_BOARD_SIZE)
+        size = QSize(10,10)
+        for move in box.moves:
+            btn = QtWidgets.QPushButton()
+            pixmap = QPixmap(size)
+            if move.removed:
+                pixmap.fill(MOVE_REMOVED_COLOR)
+            else:
+                pixmap.fill(move.color.value)
+            btn.setIcon(QtGui.QIcon(pixmap))
+            btn.setIconSize(size)
+            btn.setFixedSize(size)
+            hLayout.addWidget(btn)
+        layout.addWidget(hWidget)
+        
 class DrawUtil():
     """
     Draw utility.
@@ -175,7 +220,7 @@ class DrawUtil():
                     DrawUtil._clearLayout(item.layout())
 
     @staticmethod
-    def _drawBoardTiles(painter:QPainter,box:Box)->None:
+    def _drawBoardTiles(painter:QPainter,board:Board)->None:
         """
         Draws board tiles and pawns.
 
@@ -186,8 +231,8 @@ class DrawUtil():
         box : Box
             Box  to draw.
         """
-        posititions = box.getTilePositions()\
-            if not box == None else None
+        posititions = board.getTilePositions()\
+            if not board == None else None
         painter.setPen(QPen(Qt.black, 2, Qt.SolidLine))
         for row in range(SIZE):
             for col in range(SIZE):
@@ -218,32 +263,55 @@ class DrawUtil():
                         BOX_BOARD_PAWN_SIZE)
 
     @staticmethod
-    def _drawMoveButtons(ui:Ui_widgetHexapawn,painter:QPainter,box:Box,moveSelectFunc:MethodType)->None:
+    def _drawMoveButtons(
+        grpMoveButton:QtWidgets.QGroupBox,
+        box:Board,
+        moveSelectFunc:MethodType)->None:
         """
         Draws move buttons.
 
         Parameter
         ---------
-        ui : Ui_widgetHexapawn
-            Hexapawn UI object.
-        painter : QPainter
-            Initialized painter.
+        grpMoveButton : QtWidgets.QGroupBox
+            Group box of move select buttons.
         box : Box
             Box  to draw.
         moveSelectFunc : MethodType
-            Callback when move is selected.
+            Callback when move is selected. None to skip drawing buttons.
         """
-        layout = ui.grpMoves.layout()
+        layout = grpMoveButton.layout()
         if layout == None:
             layout = QVBoxLayout()
-            ui.grpMoves.setLayout(layout)
+            grpMoveButton.setLayout(layout)
         else:
-            DrawUtil._clearLayout(ui.grpMoves.layout())
+            DrawUtil._clearLayout(grpMoveButton.layout())
         if not box == None:
             for move in box.moves:
                 # select move button widget
                 wdgt = SelectMoveButtonWidget(move,moveSelectFunc)
                 layout.addWidget(wdgt)
+            layout.setAlignment(Qt.AlignTop)
+
+    @staticmethod
+    def _drawBoxToButton(box:Box,button:QtWidgets.QPushButton,scaleTo:int=-1):
+        """
+        Draws box to button.
+
+        Parameter
+        ---------
+        box : Box
+            Box  to draw.
+        button : QtWidgets.QPushButton
+            Button to draw box into.
+        scaleTo : int
+            Scale. -1 if there is no scaling.
+        """
+        size = QSize( BOX_BOARD_DRAW_SIZE, BOX_BOARD_DRAW_SIZE )
+        pixmap = QPixmap(size)
+        painter = QPainter(pixmap)
+        DrawUtil._drawBoardTiles(painter,box)
+        if not box == None:
+            for move in box.moves:
                 # movement arrow
                 pts = MOVEMENT_POINTS_MAP[move.movement]
                 if not pts == None:
@@ -251,21 +319,29 @@ class DrawUtil():
                     if not move.removed:
                         painter.setBrush(move.color.value)
                     else:
-                        painter.setBrush(QtGui.QColor(195,195,195))
+                        painter.setBrush(MOVE_REMOVED_COLOR)
                     adjustP = []
                     adjX = (move.position.col*BOX_BOARD_TILE_SIZE)
                     adjY = (move.position.row*BOX_BOARD_TILE_SIZE)
                     for pt in pts:
                         adjustP.append(QPoint(pt.x()+adjX,pt.y()+adjY))
                     painter.drawPolygon(QPolygon(adjustP))
-            layout.setAlignment(Qt.AlignTop)
+        painter.end()
+        if not scaleTo == -1:
+            scaledSize = QSize(scaleTo,scaleTo)
+            button.setIconSize(scaledSize)
+            button.setFixedSize(QSize(scaleTo,scaleTo))
+            pixmap.scaledToHeight(scaleTo)
+        else:
+            button.setIconSize(size)
+        button.setIcon(QtGui.QIcon(pixmap))
 
     ######################################################################
     #                          public functions                          #
     ######################################################################
 
     @staticmethod
-    def drawBoard(
+    def drawMainBoard(
             buttonMap:list,
             board:Board,
             selectedTilePosition:Position)->None:
@@ -334,7 +410,7 @@ class DrawUtil():
             ui.lblPlayerToMove.setText("Player To Move")
 
     @staticmethod
-    def drawBox(ui:Ui_widgetHexapawn,box:Box,moveSelectFunc:MethodType)->None:
+    def drawCurrentBox(ui:Ui_widgetHexapawn,box:Board,moveSelectFunc:MethodType)->None:
         """
         Draws box.
 
@@ -347,13 +423,35 @@ class DrawUtil():
         moveSelectFunc : MethodType
             Callback when move is selected.
         """
-        size = QSize( BOX_BOARD_DRAW_SIZE, BOX_BOARD_DRAW_SIZE )
-        pixmap = QPixmap(size)
-        painter = QPainter(pixmap)
-        # draw board tiles
-        DrawUtil._drawBoardTiles(painter,box)
-        # draw moves
-        DrawUtil._drawMoveButtons(ui,painter,box,moveSelectFunc)
-        painter.end()
-        ui.btnComputerMove.setIcon(QtGui.QIcon(pixmap))
-        ui.btnComputerMove.setIconSize(size)
+        DrawUtil._drawBoxToButton(box,ui.btnComputerMove)
+        DrawUtil._drawMoveButtons(ui.grpMoves,box,moveSelectFunc)
+
+    @staticmethod
+    def drawBoxes(grpBox:QtWidgets.QGroupBox,computer:Computer):
+        boxes = computer._boxes
+        layout = grpBox.layout()
+        if layout == None:
+            layout = QGridLayout()
+            grpBox.setLayout(layout)
+            layout.setSpacing(0)
+        else:
+            DrawUtil._clearLayout(grpBox.layout())
+        row = 0
+        col = 0
+        for turn in range(10):
+            turnBoxes = list(filter(lambda b : b.turn == turn, boxes))
+            if len(turnBoxes)>0:
+                lbl = QtWidgets.QLabel("{}".format(turn))
+                layout.addWidget(lbl,row,0)
+                col = 1
+                for box in turnBoxes:
+                    boxInfoWidget = BoxInfoWidget(box)
+                    layout.addWidget(boxInfoWidget,row,col)
+                    if col >= BOX_COUNT_PER_ROW:
+                        # next row
+                        row+=1
+                        col = 1
+                        pass
+                    else:
+                        col+=1
+                row+=1

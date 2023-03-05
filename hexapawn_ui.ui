@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>929</width>
-    <height>421</height>
+    <width>932</width>
+    <height>790</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -283,6 +283,19 @@
      </property>
     </column>
    </widget>
+  </widget>
+  <widget class="QGroupBox" name="grpBoxes">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>410</y>
+     <width>901</width>
+     <height>371</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Boxes</string>
+   </property>
   </widget>
  </widget>
  <resources/>
