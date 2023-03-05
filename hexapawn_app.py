@@ -14,9 +14,7 @@
 """
 import random
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QHBoxLayout
+from PyQt5.QtWidgets import QScrollArea
 
 from hexapawn.game_manager import *
 from hexapawn.board import *
@@ -45,8 +43,10 @@ class HexapawnApp():
         self._computer = Computer()
         self._currentBox = None
         self._recordedMoves = []
-
         self._selectedPawnPosition = None
+        self.grpMainBoxes = QtWidgets.QGroupBox()
+        scrollArea = QScrollArea()
+        layout = QtWidgets.QVBoxLayout(self._ui.grpBoxes)
 
         self._setupTiles()
         self._ui.btnReset.clicked.connect(self._reset)
@@ -56,12 +56,11 @@ class HexapawnApp():
         DrawUtil.drawMainBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
         DrawUtil.drawCurrentBox(self._ui,self._currentBox,self._selectMove)
-
+        DrawUtil.drawBoxes(self.grpMainBoxes,self._computer)
         self._setComputerMoveUi()
 
-        self._ui.grpMainBoxes = QtWidgets.QGroupBox(self._ui.grpBoxes)
-        self._ui.grpMainBoxes.move(5,15)
-        DrawUtil.drawBoxes(self._ui,self._computer)
+        scrollArea.setWidget(self.grpMainBoxes)
+        layout.addWidget(scrollArea)
 
     def _setupTiles(self)->None:
         """
@@ -106,6 +105,18 @@ class HexapawnApp():
         self._ui.grpMoves.setEnabled(enabled)
         self._ui.btnMoveRandomSelect.setEnabled(enabled)
 
+    def _recordMove(self,move:Move)->None:
+        """
+        Records move.
+
+        Parameter
+        ---------
+        move : Move
+            Move to record.
+        """
+        newMoveRecord = MoveRecord(self._currentBox,move)
+        self._recordedMoves.append(newMoveRecord)
+
     def _selectMove(self,move:Move)->None:
         """
         Selects a move for black.
@@ -116,7 +127,7 @@ class HexapawnApp():
             Move selected. Cannot be None.
         """
         assert not move == None and type(move) == Move
-        self._recordedMoves.append(MoveRecord(self._gameManager.turn,move))
+        self._recordMove(move)
         tilePositions = self._board.getTilePositions()
         blackPawnToMove = tilePositions[move.position.row][move.position.col]
         newPosition = move.newPosition()
@@ -185,8 +196,8 @@ class HexapawnApp():
         if winner == Player.WHITE and len(self._recordedMoves)>0:
             moveRecord = self._removeMoveCausingBlackPlayerLose()
             if not moveRecord == None:
-                winDetails = "{} : Removed {} for turn {}."\
-                    .format(winDetails,moveRecord.move.color.name,moveRecord.turn)
+                winDetails = "{} : Removed {} for from {}."\
+                    .format(winDetails,moveRecord.move.color.name,moveRecord.box.id)
                 moveRecord.move.remove()
         item = QtWidgets.QTableWidgetItem()
         item.setText(winDetails)
@@ -209,7 +220,7 @@ class HexapawnApp():
         for move in self._currentBox.moves:
             if pawn.inPosition(move.position) and\
                 arePositionsEqual(move.newPosition(),newPosition):
-                self._recordedMoves.append(MoveRecord(self._gameManager.turn,move))
+                self._recordMove(move)
                 break
 
     def _movePawn(self,pawn:Pawn,newPosition:Position)->None:
@@ -329,7 +340,7 @@ class HexapawnApp():
                     redrawBoard = False
             if redrawBoard:
                 DrawUtil.drawMainBoard(self._buttonMap,self._board,self._selectedPawnPosition)
-            DrawUtil.drawBoxes(self._ui,self._computer)
+            DrawUtil.drawBoxes(self.grpMainBoxes,self._computer)
 
     def _reset(self):
         """
@@ -355,7 +366,7 @@ class HexapawnApp():
         self._ui.tableResults.setRowCount(0)
         self._computer.resetIntelligence()
         self._reset()
-        DrawUtil.drawBoxes(self._ui,self._computer)
+        DrawUtil.drawBoxes(self.grpMainBoxes,self._computer)
 
     ######################################################################
     #                          public functions                          #

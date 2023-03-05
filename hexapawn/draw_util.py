@@ -427,9 +427,8 @@ class DrawUtil():
         DrawUtil._drawMoveButtons(ui.grpMoves,box,moveSelectFunc)
 
     @staticmethod
-    def drawBoxes(ui:Ui_widgetHexapawn,computer:Computer):
+    def drawBoxes(grpBox:QtWidgets.QGroupBox,computer:Computer):
         boxes = computer._boxes
-        grpBox = ui.grpMainBoxes
         layout = grpBox.layout()
         if layout == None:
             layout = QGridLayout()
