@@ -336,6 +336,7 @@ class HexapawnApp():
         self._selectedPawnPosition = None
         self._currentBox = None
         self._recordedMoves = []
+        self._setComputerMoveUi()
 
         DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)

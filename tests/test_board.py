@@ -85,6 +85,8 @@ class TestPosition(unittest.TestCase):
 
 class TestPawn(unittest.TestCase):
 
+    ### Pawn.__init__ ###
+
     def test_pawn(self):
 
         pawn = Pawn(Color.BLACK,Position(0,0))
@@ -97,6 +99,8 @@ class TestPawn(unittest.TestCase):
         self.assertEqual(pawn.position.row,1)
         self.assertEqual(pawn.position.col,2)
 
+    ### Pawn.inPosition ###
+
     def test_inPosition(self):
 
         pawn = Pawn(Color.BLACK,Position(0,0))
@@ -107,6 +111,84 @@ class TestPawn(unittest.TestCase):
 
         with self.assertRaises(AssertionError):
             pawn.inPosition(None)
+
+    ### arePawnsEqual ###
+
+    def test_arePawnsEqual_mismatchPawnCountReturnsFalse(self):
+        # setup
+        aPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        bPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            # Pawn(Color.BLACK,Position(0,2)),
+        ]
+        # execute
+        res = arePawnsEqual(aPawns,bPawns)
+        # assert
+        self.assertFalse(res)
+
+    def test_arePawnsEqual_mismatchPawnPositionReturnsFalse(self):
+        # setup
+        aPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        bPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(1,1)),
+        ]
+        # execute
+        res = arePawnsEqual(aPawns,bPawns)
+        # assert
+        self.assertFalse(res)
+
+    def test_arePawnsEqual_mismatchPawnColorReturnsFalse(self):
+        # setup
+        aPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        bPawns = [
+            Pawn(Color.WHITE,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        # execute
+        res = arePawnsEqual(aPawns,bPawns)
+        # assert
+        self.assertFalse(res)
+
+    def test_arePawnsEqual_returnsTrueForExactMatch(self):
+        # setup
+        aPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        bPawns = [
+            Pawn(Color.BLACK,Position(0,0)),
+            Pawn(Color.BLACK,Position(0,1)),
+            Pawn(Color.BLACK,Position(0,2)),
+        ]
+        # execute
+        res = arePawnsEqual(aPawns,bPawns)
+        # assert
+        self.assertTrue(res)
+        
+        # setup
+        aPawns = []
+        bPawns = []
+        # execute
+        res = arePawnsEqual(aPawns,bPawns)
+        # assert
+        self.assertTrue(res)
 
 class TestBoard(unittest.TestCase):
 
@@ -1732,84 +1814,6 @@ class TestBoard(unittest.TestCase):
                 "- - W",
             ])
 
-    ### Board.arePawnsEqual ###
-
-    def test_arePawnsEqual_mismatchPawnCountReturnsFalse(self):
-        # setup
-        aPawns = [
-            Pawn(Color.BLACK,Position(0,0)),
-            Pawn(Color.BLACK,Position(0,1)),
-            Pawn(Color.BLACK,Position(0,2)),
-        ]
-        bPawns = [
-            Pawn(Color.BLACK,Position(0,0)),
-            Pawn(Color.BLACK,Position(0,1)),
-            # Pawn(Color.BLACK,Position(0,2)),
-        ]
-        # execute
-        res = Board.arePawnsEqual(aPawns,bPawns)
-        # assert
-        self.assertFalse(res)
-
-    def test_arePawnsEqual_mismatchPawnPositionReturnsFalse(self):
-        # setup
-        aPawns = [
-            Pawn(Color.BLACK,Position(0,0)),
-            Pawn(Color.BLACK,Position(0,1)),
-            Pawn(Color.BLACK,Position(0,2)),
-        ]
-        bPawns = [
-            Pawn(Color.BLACK,Position(0,0)),
-            Pawn(Color.BLACK,Position(0,1)),
-            Pawn(Color.BLACK,Position(1,1)),
-        ]
-        # execute
-        res = Board.arePawnsEqual(aPawns,bPawns)
-        # assert
-        self.assertFalse(res)
-
-    def test_arePawnsEqual_mismatchPawnColorReturnsFalse(self):
-        # setup
-        aPawns = [
-            Pawn(Color.BLACK,Position(0,0)),
-            Pawn(Color.BLACK,Position(0,1)),
-            Pawn(Color.BLACK,Position(0,2)),
-        ]
-        bPawns = [
-            Pawn(Color.WHITE,Position(0,0)),
-            Pawn(Color.BLACK,Position(0,1)),
-            Pawn(Color.BLACK,Position(0,2)),
-        ]
-        # execute
-        res = Board.arePawnsEqual(aPawns,bPawns)
-        # assert
-        self.assertFalse(res)
-
-    def test_arePawnsEqual_returnsTrueForExactMatch(self):
-        # setup
-        aPawns = [
-            Pawn(Color.BLACK,Position(0,0)),
-            Pawn(Color.BLACK,Position(0,1)),
-            Pawn(Color.BLACK,Position(0,2)),
-        ]
-        bPawns = [
-            Pawn(Color.BLACK,Position(0,0)),
-            Pawn(Color.BLACK,Position(0,1)),
-            Pawn(Color.BLACK,Position(0,2)),
-        ]
-        # execute
-        res = Board.arePawnsEqual(aPawns,bPawns)
-        # assert
-        self.assertTrue(res)
-        
-        # setup
-        aPawns = []
-        bPawns = []
-        # execute
-        res = Board.arePawnsEqual(aPawns,bPawns)
-        # assert
-        self.assertTrue(res)
-
     ### Board.arePawnPositionsSymmetric ###
 
     def test_arePawnPositionsSymmetric_asymmetric(self):
@@ -1900,3 +1904,111 @@ class TestBoard(unittest.TestCase):
                 "- - -",
                 "W W W",
             ])
+        
+    ### areBoardsEqual ###
+
+    def test_areBoardsEqual_matchReturnsTrue(self):
+        boardA = Board()
+        boardB = Board()
+        # setup
+        TestBoardUtil.setBoard(
+            boardA,
+            [
+                "- B B",
+                "W B -",
+                "- W W",
+            ])
+        TestBoardUtil.setBoard(
+            boardB,
+            [
+                "- B B",
+                "W B -",
+                "- W W",
+            ])
+        # execute
+        res = areBoardsEqual(boardA,boardB)
+        # assert
+        self.assertTrue(res)
+
+    def test_areBoardsEqual_mismatchReturnsFalse(self):
+        boardA = Board()
+        boardB = Board()
+        ## row 0 mismacth
+        # setup
+        TestBoardUtil.setBoard(
+            boardA,
+            [
+                "- B B",
+                "W B -",
+                "- W W",
+            ])
+        TestBoardUtil.setBoard(
+            boardB,
+            [
+                "- B -",
+                "W B -",
+                "- W W",
+            ])
+        # execute
+        res = areBoardsEqual(boardA,boardB)
+        # assert
+        self.assertFalse(res)
+        # setup
+        TestBoardUtil.setBoard(
+            boardA,
+            [
+                "- B B",
+                "W B -",
+                "- W -",
+            ])
+        TestBoardUtil.setBoard(
+            boardB,
+            [
+                "- B W",
+                "W B -",
+                "- W -",
+            ])
+        # execute
+        res = areBoardsEqual(boardA,boardB)
+        # assert
+        self.assertFalse(res)
+        ## row 1 mismacth
+        TestBoardUtil.setBoard(
+            boardA,
+            [
+                "- B B",
+                "- B -",
+                "- W W",
+            ])
+        TestBoardUtil.setBoard(
+            boardB,
+            [
+                "- B B",
+                "W B -",
+                "- W W",
+            ])
+        # execute
+        res = areBoardsEqual(boardA,boardB)
+        # assert
+        self.assertFalse(res)
+        ## row 2 mismacth
+        # setup
+        TestBoardUtil.setBoard(
+            boardA,
+            [
+                "- B B",
+                "W B -",
+                "W W -",
+            ])
+        TestBoardUtil.setBoard(
+            boardB,
+            [
+                "- B B",
+                "W B -",
+                "- W W",
+            ])
+        # execute
+        res = areBoardsEqual(boardA,boardB)
+        # assert
+        self.assertFalse(res)
+        
