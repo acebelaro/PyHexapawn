@@ -53,7 +53,7 @@ class HexapawnApp():
         self._ui.btnMoveRandomSelect.clicked.connect(self._moveRandomSelect)
         self._ui.btnResetIntelligence.clicked.connect(self._resetIntelligence)
     
-        DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
+        DrawUtil.drawMainBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
         DrawUtil.drawCurrentBox(self._ui,self._currentBox,self._selectMove)
 
@@ -121,7 +121,7 @@ class HexapawnApp():
         blackPawnToMove = tilePositions[move.position.row][move.position.col]
         newPosition = move.newPosition()
         self._movePawn(blackPawnToMove,newPosition)
-        DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
+        DrawUtil.drawMainBoard(self._buttonMap,self._board,self._selectedPawnPosition)
 
     def _moveRandomSelect(self)->None:
         """
@@ -328,7 +328,7 @@ class HexapawnApp():
                     # attemmpt to select rival pawn
                     redrawBoard = False
             if redrawBoard:
-                DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
+                DrawUtil.drawMainBoard(self._buttonMap,self._board,self._selectedPawnPosition)
             DrawUtil.drawBoxes(self._ui,self._computer)
 
     def _reset(self):
@@ -343,7 +343,7 @@ class HexapawnApp():
         self._recordedMoves = []
         self._setComputerMoveUi()
 
-        DrawUtil.drawBoard(self._buttonMap,self._board,self._selectedPawnPosition)
+        DrawUtil.drawMainBoard(self._buttonMap,self._board,self._selectedPawnPosition)
         DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
         DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
         DrawUtil.drawCurrentBox(self._ui,self._currentBox,self._selectMove)

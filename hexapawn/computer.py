@@ -573,7 +573,10 @@ class Computer():
     """Boxes for black player moves."""
 
     def __init__(self) -> None:
+
         self._addMirrorsOfAsymmetricBoxes()
+
+        self._boxes = sorted(self._boxes, key=lambda x: x.id, reverse=False)
     
     def _addMirrorsOfAsymmetricBoxes(self)->None:
         """
