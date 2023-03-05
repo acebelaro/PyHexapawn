@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_widgetHexapawn(object):
     def setupUi(self, widgetHexapawn):
         widgetHexapawn.setObjectName("widgetHexapawn")
-        widgetHexapawn.resize(610, 421)
+        widgetHexapawn.resize(929, 421)
         self.grpBoard = QtWidgets.QGroupBox(widgetHexapawn)
         self.grpBoard.setGeometry(QtCore.QRect(20, 10, 341, 341))
         self.grpBoard.setObjectName("grpBoard")
@@ -70,7 +70,7 @@ class Ui_widgetHexapawn(object):
         self.btnReset.setGeometry(QtCore.QRect(240, 10, 75, 23))
         self.btnReset.setObjectName("btnReset")
         self.grpComputer = QtWidgets.QGroupBox(widgetHexapawn)
-        self.grpComputer.setGeometry(QtCore.QRect(370, 10, 231, 401))
+        self.grpComputer.setGeometry(QtCore.QRect(370, 10, 551, 401))
         self.grpComputer.setObjectName("grpComputer")
         self.btnComputerMove = QtWidgets.QPushButton(self.grpComputer)
         self.btnComputerMove.setGeometry(QtCore.QRect(10, 20, 211, 191))
@@ -83,6 +83,18 @@ class Ui_widgetHexapawn(object):
         self.btnMoveRandomSelect = QtWidgets.QPushButton(self.grpComputer)
         self.btnMoveRandomSelect.setGeometry(QtCore.QRect(14, 370, 211, 23))
         self.btnMoveRandomSelect.setObjectName("btnMoveRandomSelect")
+        self.btnResetIntelligence = QtWidgets.QPushButton(self.grpComputer)
+        self.btnResetIntelligence.setGeometry(QtCore.QRect(380, 20, 161, 23))
+        self.btnResetIntelligence.setObjectName("btnResetIntelligence")
+        self.tableResults = QtWidgets.QTableWidget(self.grpComputer)
+        self.tableResults.setGeometry(QtCore.QRect(230, 50, 311, 341))
+        self.tableResults.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableResults.setObjectName("tableResults")
+        self.tableResults.setColumnCount(1)
+        self.tableResults.setRowCount(0)
+        item = QtWidgets.QTableWidgetItem()
+        self.tableResults.setHorizontalHeaderItem(0, item)
+        self.tableResults.horizontalHeader().setStretchLastSection(True)
 
         self.retranslateUi(widgetHexapawn)
         QtCore.QMetaObject.connectSlotsByName(widgetHexapawn)
@@ -95,6 +107,9 @@ class Ui_widgetHexapawn(object):
         self.btnReset.setText(_translate("widgetHexapawn", "Reset"))
         self.grpComputer.setTitle(_translate("widgetHexapawn", "Computer"))
         self.btnMoveRandomSelect.setText(_translate("widgetHexapawn", "  RANDOM SELECT"))
+        self.btnResetIntelligence.setText(_translate("widgetHexapawn", "RESET INTELLIGENCE"))
+        item = self.tableResults.horizontalHeaderItem(0)
+        item.setText(_translate("widgetHexapawn", "Results"))
 
 
 if __name__ == "__main__":

@@ -34,6 +34,9 @@ class Move():
     movement = None
     """Movement type : forward, diagonal left or diagonal right."""
 
+    removed = False
+    """Remove if resulted to lose."""
+
     def __init__(self,position:Position,color:MoveColor,movement:Movement) -> None:
         """
         Parameter
@@ -75,6 +78,43 @@ class Move():
             newRow+=1
             newCol+=1
         return Position(newRow,newCol)
+    
+    def remove(self)->None:
+        """
+        Reset move.
+        """
+        self.removed = True
+
+    def reset(self):
+        """
+        Reset move.
+        """
+        self.removed = False
+
+class MoveRecord():
+    """
+    Move record.
+    """
+
+    turn = -1
+    """Turn of move."""
+
+    move = None
+    """Move executed."""
+    
+    def __init__(self,turn:int,move:Move) -> None:
+        """
+        Parameter
+        ---------
+        turn : int
+            Turn of move.
+        move : Move
+            Move executed.
+        """
+        assert type(turn) == int and turn >=1
+        assert not move == None and type(move) == Move
+        self.turn = turn
+        self.move = move
 
 class Box(Board):
     """
@@ -219,6 +259,14 @@ class Box(Board):
     ######################################################################
     #                          public functions                          #
     ######################################################################
+
+    def reset(self):
+        """
+        Resets box.
+        """
+        for move in self.moves:
+            move.reset()
+        pass
 
 class Computer():
     """
@@ -542,7 +590,7 @@ class Computer():
         Box : Mirrored box.
         """
         assert not box == None
-        setting = []
+        newSetting = []
         tilePositions = box.getTilePositions()
         for row in range(SIZE):
             rowStr = []
@@ -554,7 +602,7 @@ class Computer():
                     rowStr.append("B")
                 elif pawn.color == Color.WHITE:
                     rowStr.append("W")
-            setting.append(" ".join(rowStr))
+            newSetting.append(" ".join(rowStr))
         newMoves = []
         reversedCol = list(reversed(range(SIZE)))
         for move in box.moves:
@@ -565,7 +613,7 @@ class Computer():
             elif move.movement == Movement.DIAGONAL_RIGHT:
                 newMovement = Movement.DIAGONAL_LEFT
             newMoves.append(Move(newPosition,move.color,newMovement))
-        box = Box( box.id, box.turn, setting, newMoves )
+        box = Box( box.id, box.turn, newSetting, newMoves )
         return box
 
     ######################################################################
@@ -591,17 +639,27 @@ class Computer():
         assert turn >= 2 and (turn%2) == 0
         assert not currentBoard == None
         boxForTurn = None
-        for box in self._boxes:
-            if box.turn == turn:
-                if Board.arePawnsEqual(box._whitePawns,currentBoard._whitePawns) and\
-                    Board.arePawnsEqual(box._blackPawns,currentBoard._blackPawns):
-                    boxForTurn = box
-                    break
-                elif box.arePawnPositionsSymmetric() == False:
+        boxesWithTurn = list(filter(lambda x : x.turn == turn, self._boxes))
+        for box in boxesWithTurn:
+            if Board.arePawnsEqual(box._whitePawns,currentBoard._whitePawns) and\
+                Board.arePawnsEqual(box._blackPawns,currentBoard._blackPawns):
+                boxForTurn = box
+                break
+        if boxForTurn == None:
+            for box in boxesWithTurn:
+                if box.arePawnPositionsSymmetric() == False:
                     # try for mirrored
                     mirroredBox = Computer._createMirroredBox(box)
                     if Board.arePawnsEqual(mirroredBox._whitePawns,currentBoard._whitePawns) and\
                         Board.arePawnsEqual(mirroredBox._blackPawns,currentBoard._blackPawns):
                         boxForTurn = mirroredBox
-                        break
+                        self._boxes.append(mirroredBox) # append
+                        break     
         return boxForTurn
+    
+    def resetIntelligence(self)->None:
+        """
+        Resets intelligence of computer.
+        """
+        for box in self._boxes:
+            box.reset()
