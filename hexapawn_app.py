@@ -13,6 +13,7 @@
 ###############################################################################
 """
 import random
+from functools import partial
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QScrollArea
 
@@ -21,75 +22,115 @@ from hexapawn.board import *
 from hexapawn.computer import *
 from hexapawn.draw_util import DrawUtil
 
-from hexapawn_ui import Ui_widgetHexapawn
+TILE_SIZE               = 101
+CURRENT_BOX_BOARD       = 200
 
-class HexapawnApp():
+class TileButton(QtWidgets.QPushButton):
+    
+    def __init__(self,row,col,tileSelectCallback):
+        super().__init__()
+        clicked = lambda event,position=Position(row,col):\
+            tileSelectCallback(position)
+        self.clicked.connect(clicked)
+
+        self.setFixedHeight(TILE_SIZE)
+        self.setFixedWidth(TILE_SIZE)
+
+class Hexapawn():
     """
-    Hexpawn application.
     """
 
     def __init__(self) -> None:
-
-        self._widgetHexapawn = QtWidgets.QWidget()
-        self._widgetHexapawn.setWindowFlags(
-            QtCore.Qt.WindowCloseButtonHint | 
-            QtCore.Qt.WindowMinimizeButtonHint)
-        self._ui = Ui_widgetHexapawn()
-        self._ui.setupUi(self._widgetHexapawn)
-
+        self._widgetMain = QtWidgets.QWidget()
+        self._widgetMain.layout = QtWidgets.QGridLayout(self._widgetMain)
+     
         self._gameManager = GameManager()
-        self._board = Board()
-        self._buttonMap = []
         self._computer = Computer()
+        self._board = Board()
+        self._mainBoardButtons = []
+        self._selectedPawnPosition = None
         self._currentBox = None
         self._recordedMoves = []
-        self._selectedPawnPosition = None
-        self.grpMainBoxes = QtWidgets.QGroupBox()
-        scrollArea = QScrollArea()
-        layout = QtWidgets.QVBoxLayout(self._ui.grpBoxes)
+        
+        # Main Board
+        self._grpBoxMainBoard = QtWidgets.QGroupBox()
+        self._grpBoxMainBoard.layout = QtWidgets.QGridLayout(self._grpBoxMainBoard)
+        self._grpBoxMainBoard.layout.setSpacing(0)
 
-        self._setupTiles()
-        self._ui.btnReset.clicked.connect(self._reset)
-        self._ui.btnMoveRandomSelect.clicked.connect(self._moveRandomSelect)
-        self._ui.btnResetIntelligence.clicked.connect(self._resetIntelligence)
+        # Player Information
+        self._grpBoxPlayerInformation = QtWidgets.QGroupBox()
+        self._grpBoxPlayerInformation.layout = QtWidgets.QHBoxLayout(self._grpBoxPlayerInformation)
+        self._lblPlayerInfo = QtWidgets.QLabel(text="Player to Move: ")
+        self._btnPlayerInfo = QtWidgets.QPushButton()
+        self._btnReset = QtWidgets.QPushButton(text="Reset")
+
+        self._grpBoxPlayerInformation.layout.addWidget(self._lblPlayerInfo)
+        self._grpBoxPlayerInformation.layout.addWidget(self._btnPlayerInfo)
+        self._grpBoxPlayerInformation.layout.addWidget(self._btnReset)
+
+        # Current Box Information
+        self._grpBoxCurrentBoxInfo = QtWidgets.QGroupBox()
+        self._grpBoxCurrentBoxInfo.layout = QtWidgets.QVBoxLayout(self._grpBoxCurrentBoxInfo)
+        self._btnCurrentBoxBoard = QtWidgets.QPushButton()
+        self._btnCurrentBoxBoard.setFixedSize(QtCore.QSize(CURRENT_BOX_BOARD,CURRENT_BOX_BOARD))
+        self._btnRandomMove = QtWidgets.QPushButton("Random")
+        self._grpBoxMoves = QtWidgets.QGroupBox()
+        self._grpBoxMoves.layout = QtWidgets.QVBoxLayout(self._grpBoxMoves)
+        # self._grpBoxMoves.layout.setSpacing(0)
+
+        self._grpBoxCurrentBoxInfo.layout.addWidget(self._btnCurrentBoxBoard)
+        self._grpBoxCurrentBoxInfo.layout.addWidget(self._grpBoxMoves)
+        self._grpBoxCurrentBoxInfo.layout.addStretch()
+        self._grpBoxCurrentBoxInfo.layout.addWidget(self._btnRandomMove)
+
+        # Record
+        self._grpBoxRecord = QtWidgets.QGroupBox()
+        self._grpBoxRecord.setFixedWidth(300)
+        self._grpBoxRecord.layout = QtWidgets.QVBoxLayout(self._grpBoxRecord)
+        self._tableResults = QtWidgets.QTableWidget()
+        columns = ["Winner"]
+        self._tableResults.setColumnCount(len(columns))
+        self._tableResults.setHorizontalHeaderLabels(columns)
+        self._tableResults.horizontalHeader().setStretchLastSection(True)
+        self._tableResults.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self._grpBoxRecord.layout.addWidget(self._tableResults)
+        self._btnResetIntelligence = QtWidgets.QPushButton(text="Reset Intelligence")
+        self._grpBoxRecord.layout.addWidget(self._btnResetIntelligence)
+
+        # Box informations
+        self._grpBoxBoxes = QtWidgets.QGroupBox()
+        
+        # Assemble
+        self._widgetMain.layout.addWidget(self._grpBoxMainBoard,0,0)
+        self._widgetMain.layout.addWidget(self._grpBoxCurrentBoxInfo,0,1,2,1)
+        self._widgetMain.layout.addWidget(self._grpBoxRecord,0,2,2,1)
+        self._widgetMain.layout.addWidget(self._grpBoxPlayerInformation,1,0)
+
+        self._setupMainBoard()
+        self._btnReset.clicked.connect(self._reset)
+        self._btnRandomMove.clicked.connect(self._moveRandomSelect)
+        self._btnResetIntelligence.clicked.connect(self._resetIntelligence)
     
-        DrawUtil.drawMainBoard(self._buttonMap,self._board,self._selectedPawnPosition)
-        DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
-        DrawUtil.drawCurrentBox(self._ui,self._currentBox,self._selectMove)
-        DrawUtil.drawBoxes(self.grpMainBoxes,self._computer)
+        DrawUtil.drawMainBoard(self._mainBoardButtons,self._board,self._selectedPawnPosition)
+        DrawUtil.drawPlayerMoveInfo(self._btnPlayerInfo,self._gameManager.turnPlayer)
+        DrawUtil.drawCurrentBox(self._btnCurrentBoxBoard,self._grpBoxMoves,self._currentBox,self._selectMove)
+        DrawUtil.drawBoxes(self._grpBoxBoxes,self._computer)
         self._setComputerMoveUi()
 
-        scrollArea.setWidget(self.grpMainBoxes)
-        layout.addWidget(scrollArea)
+        scrollArea = QScrollArea()
+        scrollArea.setWidget(self._grpBoxBoxes)
+        self._widgetMain.layout.addWidget(scrollArea,2,0,1,3)
 
-    def _setupTiles(self)->None:
+    def _setupMainBoard(self):
         """
-        Setups board tiles by assigning corresponding button callbacks.
-        Each callback passes the equivalent position for each button.
         """
-        self._buttonMap = [
-            [ self._ui.btnPawn0, self._ui.btnPawn1, self._ui.btnPawn2 ],
-            [ self._ui.btnPawn3, self._ui.btnPawn4, self._ui.btnPawn5 ],
-            [ self._ui.btnPawn6, self._ui.btnPawn7, self._ui.btnPawn8 ]
-        ]
-        self._ui.btnPawn0.clicked.connect(
-            lambda event:self._boardTileClicked(event,Position(0,0)))
-        self._ui.btnPawn1.clicked.connect(
-            lambda event:self._boardTileClicked(event,Position(0,1)))
-        self._ui.btnPawn2.clicked.connect(
-            lambda event:self._boardTileClicked(event,Position(0,2)))
-        self._ui.btnPawn3.clicked.connect(
-            lambda event:self._boardTileClicked(event,Position(1,0)))
-        self._ui.btnPawn4.clicked.connect(
-            lambda event:self._boardTileClicked(event,Position(1,1)))
-        self._ui.btnPawn5.clicked.connect(
-            lambda event:self._boardTileClicked(event,Position(1,2)))
-        self._ui.btnPawn6.clicked.connect(
-            lambda event:self._boardTileClicked(event,Position(2,0)))
-        self._ui.btnPawn7.clicked.connect(
-            lambda event:self._boardTileClicked(event,Position(2,1)))
-        self._ui.btnPawn8.clicked.connect(
-            lambda event:self._boardTileClicked(event,Position(2,2)))
+        for row in range(SIZE):
+            oneRow = []
+            for col in range(SIZE):
+                btnTile = TileButton(row,col,self._boardTileClicked)
+                oneRow.append(btnTile)
+                self._grpBoxMainBoard.layout.addWidget(btnTile,row,col)
+            self._mainBoardButtons.append(oneRow)
         
     def _setComputerMoveUi(self,enabled:bool=None)->None:
         """
@@ -102,8 +143,8 @@ class HexapawnApp():
         """
         if enabled == None:
             enabled = True if self._gameManager.turnPlayer == Player.BLACK else False
-        self._ui.grpMoves.setEnabled(enabled)
-        self._ui.btnMoveRandomSelect.setEnabled(enabled)
+        self._grpBoxMoves.setEnabled(enabled)
+        self._btnRandomMove.setEnabled(enabled)
 
     def _recordMove(self,move:Move)->None:
         """
@@ -132,7 +173,7 @@ class HexapawnApp():
         blackPawnToMove = tilePositions[move.position.row][move.position.col]
         newPosition = move.newPosition()
         self._movePawn(blackPawnToMove,newPosition)
-        DrawUtil.drawMainBoard(self._buttonMap,self._board,self._selectedPawnPosition)
+        DrawUtil.drawMainBoard(self._mainBoardButtons,self._board,self._selectedPawnPosition)
 
     def _moveRandomSelect(self)->None:
         """
@@ -158,12 +199,12 @@ class HexapawnApp():
         """
         self._selectedPawnPosition = None
         self._gameManager.nextPlayer()
-        DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
+        DrawUtil.drawPlayerMoveInfo(self._btnPlayerInfo,self._gameManager.turnPlayer)
         if self._gameManager.turnPlayer == Player.BLACK:
             self._currentBox = self._computer.getBoxForCurrentBlackTurn(
                 self._gameManager.turn,
                 self._board)
-        DrawUtil.drawCurrentBox(self._ui,self._currentBox,self._selectMove)
+        DrawUtil.drawCurrentBox(self._btnCurrentBoxBoard,self._grpBoxMoves,self._currentBox,self._selectMove)
         self._setComputerMoveUi()
 
     def _removeMoveCausingBlackPlayerLose(self)->MoveRecord:
@@ -188,10 +229,10 @@ class HexapawnApp():
         Declare winner.
         """
         self._gameManager.endGame()
-        DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
+        DrawUtil.drawWinnerInfo(self._lblPlayerInfo,self._gameManager)
         # update result
-        index = self._ui.tableResults.rowCount()
-        self._ui.tableResults.setRowCount(index + 1)
+        index = self._tableResults.rowCount()
+        self._tableResults.setRowCount(index + 1)
         winDetails = winner.name
         if winner == Player.WHITE and len(self._recordedMoves)>0:
             moveRecord = self._removeMoveCausingBlackPlayerLose()
@@ -201,7 +242,7 @@ class HexapawnApp():
                 moveRecord.move.remove()
         item = QtWidgets.QTableWidgetItem()
         item.setText(winDetails)
-        self._ui.tableResults.setItem(index, 0, item)        
+        self._tableResults.setItem(index, 0, item)
 
     def _findMoveInCurrentBox(self,pawn:Pawn,newPosition:Position)->None:
         """
@@ -295,7 +336,7 @@ class HexapawnApp():
             if not pawnInSelectedPosition == None:
                 self._movePawn(pawnInSelectedPosition,clickedTilePosition)
             
-    def _boardTileClicked(self,event,clickedTilePosition:Position)->None:
+    def _boardTileClicked(self,clickedTilePosition:Position)->None:
         """
         Callback when board tile is clicked.\n
         Handles pawn selection/deselection and movement.
@@ -339,8 +380,8 @@ class HexapawnApp():
                     # attemmpt to select rival pawn
                     redrawBoard = False
             if redrawBoard:
-                DrawUtil.drawMainBoard(self._buttonMap,self._board,self._selectedPawnPosition)
-            DrawUtil.drawBoxes(self.grpMainBoxes,self._computer)
+                DrawUtil.drawMainBoard(self._mainBoardButtons,self._board,self._selectedPawnPosition)
+            DrawUtil.drawBoxes(self._grpBoxBoxes,self._computer)
 
     def _reset(self):
         """
@@ -354,19 +395,19 @@ class HexapawnApp():
         self._recordedMoves = []
         self._setComputerMoveUi()
 
-        DrawUtil.drawMainBoard(self._buttonMap,self._board,self._selectedPawnPosition)
-        DrawUtil.drawPlayerMoveInfo(self._ui,self._gameManager.turnPlayer)
-        DrawUtil.drawWinnerInfo(self._ui,self._gameManager)
-        DrawUtil.drawCurrentBox(self._ui,self._currentBox,self._selectMove)
+        DrawUtil.drawMainBoard(self._mainBoardButtons,self._board,self._selectedPawnPosition)
+        DrawUtil.drawPlayerMoveInfo(self._btnPlayerInfo,self._gameManager.turnPlayer)
+        DrawUtil.drawWinnerInfo(self._lblPlayerInfo,self._gameManager)
+        DrawUtil.drawCurrentBox(self._btnCurrentBoxBoard,self._grpBoxMoves,self._currentBox,self._selectMove)
 
     def _resetIntelligence(self):
         """
         Resets intelligence.
         """
-        self._ui.tableResults.setRowCount(0)
+        self._tableResults.setRowCount(0)
         self._computer.resetIntelligence()
         self._reset()
-        DrawUtil.drawBoxes(self.grpMainBoxes,self._computer)
+        DrawUtil.drawBoxes(self._grpBoxBoxes,self._computer)
 
     ######################################################################
     #                          public functions                          #
@@ -376,13 +417,15 @@ class HexapawnApp():
         """
         Show hexapawn application.
         """
-        self._widgetHexapawn.show()
+        self._widgetMain.show()
+
+
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
 
-    hexapawnApp = HexapawnApp()
+    hexapawnApp = Hexapawn()
     hexapawnApp.show()
     sys.exit(app.exec_())
  

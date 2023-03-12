@@ -22,14 +22,12 @@ from hexapawn.game_manager import *
 from hexapawn.board import *
 from hexapawn.computer import *
 
-from hexapawn_ui import Ui_widgetHexapawn
-
 class TileFillColor(Enum):
     """
     Tile fill color selection.
     """
-    NORMAL = Qt.gray
-    SELECTED = Qt.blue
+    NORMAL      = Qt.gray
+    SELECTED    = Qt.blue
 
 """Main board tile constants."""
 TILE_BUTTON_SIZE = 96
@@ -43,11 +41,10 @@ BOX_BOARD_PAWN_SIZE = 40
 BOX_BOARD_PAWNW_START_POINT_DIFF = (BOX_BOARD_TILE_SIZE-BOX_BOARD_PAWN_SIZE)/2
 BOX_BOARD_COLOR = QtGui.QColor(255,193,116)
 
-SELECT_MOVE_BUTTON_SIZE = QSize(160,15)
+SELECT_MOVE_BUTTON_SIZE = QSize(150,15)
 MOVE_REMOVED_COLOR = QtGui.QColor(195,195,195)
 
 BOXES_BOARD_SIZE = 50
-BOX_COUNT_PER_ROW = 122
 
 MOVEMENT_POINTS_MAP = {
     Movement.FORWARD : [
@@ -79,45 +76,6 @@ MOVEMENT_POINTS_MAP = {
     ],
 }
 """Polygon point list for each movement for drawing."""
-
-class SelectMoveButtonWidget(QtWidgets.QWidget):
-    """
-    Move widget. Conists of button to select the move and label indicator if it is removed from box.
-    """
-
-    def __init__(self,move:Move,moveSelectFunc:MethodType) -> None:
-        """
-        Parameter
-        ---------
-        move : Move
-            Move for this button.
-        moveSelectFunc : MethodType
-            Callback when move is selected.
-        """
-        assert not move == None and type(move) == Move
-        assert not moveSelectFunc == None and type(moveSelectFunc) == MethodType
-        super().__init__()
-        self.move = move
-        self.moveSelectFunc = moveSelectFunc
-        button = QtWidgets.QPushButton()
-        button.clicked.connect(self._clicked)
-        button.setEnabled(not move.removed)
-        pixmap = QPixmap(SELECT_MOVE_BUTTON_SIZE)
-        pixmap.fill(move.color.value)
-        button.setIcon(QtGui.QIcon(pixmap))
-        button.setIconSize(SELECT_MOVE_BUTTON_SIZE)
-
-        btnLayout = QHBoxLayout(self)
-        flagText = "X" if move.removed else " "
-        btnLayout.addWidget(QtWidgets.QLabel(flagText))
-        btnLayout.addWidget(button)
-        btnLayout.addStretch()
-
-    def _clicked(self)->None:
-        """
-        Callback when move button is clicked.
-        """
-        self.moveSelectFunc(self.move)
 
 class BoxInfoWidget(QtWidgets.QWidget):
     """
@@ -279,18 +237,22 @@ class DrawUtil():
         moveSelectFunc : MethodType
             Callback when move is selected. None to skip drawing buttons.
         """
-        layout = grpMoveButton.layout()
-        if layout == None:
-            layout = QVBoxLayout()
-            grpMoveButton.setLayout(layout)
-        else:
-            DrawUtil._clearLayout(grpMoveButton.layout())
+        layout = grpMoveButton.layout
+        DrawUtil._clearLayout(layout)
         if not box == None:
             for move in box.moves:
-                # select move button widget
-                wdgt = SelectMoveButtonWidget(move,moveSelectFunc)
-                layout.addWidget(wdgt)
-            layout.setAlignment(Qt.AlignTop)
+                button = QtWidgets.QPushButton()
+                button.clicked.connect(lambda event,move=move:moveSelectFunc(move))
+                button.setEnabled(not move.removed)
+                pixmap = QPixmap(SELECT_MOVE_BUTTON_SIZE)
+                if not move.removed:
+                    pixmap.fill(move.color.value)
+                else:
+                    pixmap.fill(MOVE_REMOVED_COLOR)
+                button.setIcon(QtGui.QIcon(pixmap))
+                button.setIconSize(SELECT_MOVE_BUTTON_SIZE)
+                layout.addWidget(button)
+            layout.setSpacing(0)
 
     @staticmethod
     def _drawBoxToButton(box:Box,button:QtWidgets.QPushButton,scaleTo:int=-1):
@@ -358,8 +320,7 @@ class DrawUtil():
             Selected tile position. None if there is no selected tile.
         """
         assert len(buttonMap) == SIZE, "Invalid button map"
-        for i in range(SIZE):
-            assert len(buttonMap[i]) == SIZE, "Invalid button map"
+        assert all(len(b) == SIZE for b in buttonMap), "Invalid button map"
         tilePositions = board.getTilePositions()
         for row in range(SIZE):
             for col in range(SIZE):
@@ -370,61 +331,62 @@ class DrawUtil():
                 DrawUtil._drawTile(buttonMap[row][col],tilePositions[row][col],selected)
 
     @staticmethod
-    def drawPlayerMoveInfo(ui:Ui_widgetHexapawn,turnPlayer:Player)->None:
+    def drawPlayerMoveInfo(btnPlayerToMove:QtWidgets.QPushButton,turnPlayer:Player)->None:
         """
         Draws player move information.
         
         Parameter
         ---------
-        ui : Ui_widgetHexapawn
-            Hexapawn UI object.
+        btnPlayerToMove : QtWidgets.QPushButton
+            Button to draw player to move.
         turnPlayer : Player
             Player making the move.
         """
-        button = ui.btnPlayerToMove
-        size = QSize(160,20)
+        size = QSize(80,20)
         pixmap = QPixmap(size)
         fill = Qt.white
         if turnPlayer == Player.BLACK:
             fill = Qt.black
         pixmap.fill(fill)
-        button.setIcon(QtGui.QIcon(pixmap))
-        button.setIconSize(size)
+        btnPlayerToMove.setIcon(QtGui.QIcon(pixmap))
+        btnPlayerToMove.setIconSize(size)
 
     @staticmethod
-    def drawWinnerInfo(ui:Ui_widgetHexapawn,gameManager:GameManager)->None:
+    def drawWinnerInfo(lblPlayerToMove:QtWidgets.QLabel,gameManager:GameManager)->None:
         """
         Draws winner information.
         
         Parameter
         ---------
-        ui : Ui_widgetHexapawn
-            Hexapawn UI object.
+        lblPlayerToMove : QtWidgets.QLabel,
+            Label to write to.
         gameManager : GameManager
             Game manager for game information.
         """
         winner = gameManager.winner
         if not winner == None:
-            ui.lblPlayerToMove.setText("WINNER")
+            lblPlayerToMove.setText("WINNER")
         else:
-            ui.lblPlayerToMove.setText("Player To Move")
+            lblPlayerToMove.setText("Player To Move")
 
     @staticmethod
-    def drawCurrentBox(ui:Ui_widgetHexapawn,box:Board,moveSelectFunc:MethodType)->None:
+    def drawCurrentBox(btnComputerMove:QtWidgets.QPushButton,grpMoves:QtWidgets.QGroupBox,box:Board,moveSelectFunc:MethodType)->None:
         """
         Draws box.
 
         Parameter
         ---------
-        ui : Ui_widgetHexapawn
-            Hexapawn UI object.
+        btnComputerMove : QtWidgets.QPushButton
+
+        grpMoves : QtWidgets.QGroupBox
+
         box : Box
             Box  to draw.
         moveSelectFunc : MethodType
             Callback when move is selected.
         """
-        DrawUtil._drawBoxToButton(box,ui.btnComputerMove)
-        DrawUtil._drawMoveButtons(ui.grpMoves,box,moveSelectFunc)
+        DrawUtil._drawBoxToButton(box,btnComputerMove)
+        DrawUtil._drawMoveButtons(grpMoves,box,moveSelectFunc)
 
     @staticmethod
     def drawBoxes(grpBox:QtWidgets.QGroupBox,computer:Computer):
@@ -447,11 +409,5 @@ class DrawUtil():
                 for box in turnBoxes:
                     boxInfoWidget = BoxInfoWidget(box)
                     layout.addWidget(boxInfoWidget,row,col)
-                    if col >= BOX_COUNT_PER_ROW:
-                        # next row
-                        row+=1
-                        col = 1
-                        pass
-                    else:
-                        col+=1
+                    col+=1
                 row+=1
